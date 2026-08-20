@@ -8,9 +8,12 @@
 # Tudo com nome proprio e conta propria. Nada e reaproveitado de outro projeto:
 # se um recurso compartilhado fosse apagado la, este site cairia junto.
 #
-# O `database_id` fica vazio ate a conta existir: ele sai pronto do
-# `wrangler d1 create` e e colado aqui. Nao e segredo, e um identificador
-# publico — pode ir para o git sem problema.
+# O `database_id` saiu do `wrangler d1 create`. Nao e segredo, e um
+# identificador publico — pode ir para o git sem problema.
+#
+# O `binding` e o nome pelo qual o codigo enxerga o banco (`env.BANCO`). O
+# wrangler sugere um nome derivado do banco; "BANCO" foi escolhido por ser mais
+# legivel no meio de uma Function.
 
 name = "hub-eventos-ieq"
 compatibility_date = "2026-08-20"
@@ -23,5 +26,5 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "BANCO"
 database_name = "hub-eventos-ieq"
-database_id = ""
+database_id = "dff2fae3-bac7-42bd-88c6-fbc43c8a2ddb"
 migrations_dir = "migrations"

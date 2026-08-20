@@ -1,0 +1,476 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/jost";
+@import "@fontsource-variable/cormorant-garamond";
+/*
+  O italico verdadeiro do Cormorant. Sem esta linha o navegador finge o italico
+  inclinando a letra reta — num Garamond isso e visivel e feio: o italico de
+  verdade tem outra construcao, com letras cursivas desenhadas uma a uma.
+  O nome do evento e a data aparecem em italico no cabecalho da galeria, entao
+  vale o subset latino a mais. As outras linguas nunca sao baixadas (unicode-range).
+*/
+@import "@fontsource-variable/cormorant-garamond/wght-italic.css";
+
+/*
+  TEMA DO HUB — provisorio, e de proposito.
+
+  A identidade da igreja ainda nao chegou. Ate ela chegar, o site usa esta
+  paleta: neutros quentes sobre fundo escuro. Quando a identidade vier, o que
+  muda sao os valores de `--base-*` logo abaixo, e nada mais — todo o resto do
+  arquivo deriva deles.
+
+  TEMA UNICO, ESCURO. Nao existe tema claro, e isso e proposital: fundo escuro
+  faz a foto saltar. A pagina recua, a imagem avanca. Um tema so significa
+  metade do CSS, zero flash ao carregar, zero bug de contraste e nenhum botao de
+  tema roubando espaco do cabecalho no celular.
+
+  `--base-*` sao as cores cruas (a verdade: mude aqui, nao nos lugares que as
+  usam). `--tema-*` e `--color-*` sao semanticos e derivam delas.
+
+  Cada evento pode sobrescrever `--primary` num wrapper da sua pagina, pela
+  coluna `cor_destaque` do banco. Como o sistema inteiro e feito de variaveis
+  CSS, isso e uma linha de `style` — nao um segundo tema.
+*/
+
+@theme inline {
+    --font-sans: 'Jost Variable', sans-serif;
+    --font-heading: 'Cormorant Garamond Variable', Georgia, serif;
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+
+    /* Tons do tema. */
+    --color-champanhe: var(--tema-champanhe);
+    --color-champanhe-claro: var(--tema-champanhe-claro);
+    --color-taupe: var(--tema-taupe);
+    /* Superficie elevada (cartoes, faixas). */
+    --color-superficie: var(--tema-superficie);
+
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    color-scheme: dark;
+
+    /* ------------------------------------------- cores cruas do tema */
+    --base-champanhe: #c9bcab;
+    --base-champanhe-claro: #efe7dc;
+    --base-taupe: #8f8175;
+    --base-preto: #050505;
+
+    /* ---------------------------------------------- tons derivados */
+    --tema-champanhe: var(--base-champanhe);
+    --tema-champanhe-claro: var(--base-champanhe-claro);
+    /* Clareado em relacao a cor crua: o #8f8175 puro nao passa contraste sobre #0a0908. */
+    --tema-taupe: #a89c8c;
+    --tema-superficie: #16130f;
+
+    /* ---------------------------------------------- tokens de interface */
+    --background: #0a0908;
+    --foreground: #ded6cb;
+    --card: #16130f;
+    --card-foreground: #e8e0d3;
+    --popover: #1b1713;
+    --popover-foreground: #e8e0d3;
+    --primary: #c9bcab;
+    --primary-foreground: #0a0908;
+    --secondary: #221e19;
+    --secondary-foreground: #e8e0d3;
+    --muted: #1a1713;
+    --muted-foreground: #a49b8e;
+    --accent: #26221c;
+    --accent-foreground: #efe7dc;
+    --destructive: #e08872;
+    /* Bordas bem mais visiveis: um #26231f sumiria no fundo. */
+    --border: #37312a;
+    --input: #433c33;
+    --ring: #8f8175;
+
+    --chart-1: #efe7dc;
+    --chart-2: #c9bcab;
+    --chart-3: #a89c8c;
+    --chart-4: #8f8175;
+    --chart-5: #6a635a;
+
+    --radius: 0.5rem;
+
+    --sidebar: #16130f;
+    --sidebar-foreground: #ded6cb;
+    --sidebar-primary: #c9bcab;
+    --sidebar-primary-foreground: #0a0908;
+    --sidebar-accent: #26221c;
+    --sidebar-accent-foreground: #efe7dc;
+    --sidebar-border: #37312a;
+    --sidebar-ring: #8f8175;
+
+    --halo: radial-gradient(120% 90% at 50% 0%, #17140f 0%, #0d0b09 55%, #050505 100%);
+    /*
+      Degrade metalico dos titulos (.titulo-metal pinta o texto com ele).
+
+      O miolo era `#b9ab9a 40%, #8f8175 60%`. Mas o #8f8175 e exatamente o tom
+      que a linha ~97 abaixo ja descartou por nao passar contraste sobre o
+      #0a0908 do fundo — la ele foi clareado para #a89c8c e aqui ficou o cru.
+      Resultado: o meio de cada titulo apagava, e na Cormorant (serifa de traco
+      fino) em tela de celular o texto sumia no fundo.
+
+      Agora o tom mais escuro do degrade e o #b9ab9a (8.9:1 sobre o fundo, passa
+      AAA). O brilho metalico continua — ele vem da variacao entre as paradas,
+      nao de uma delas ser escura.
+    */
+    --gradiente-titulo: linear-gradient(150deg, #efe7dc, #d8ccbe 40%, #b9ab9a 60%, #efe7dc);
+    --sombra-carta: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -12px rgb(0 0 0 / 0.7);
+
+    /* Altura do cabecalho fixo — usada para calcular scroll-margin e o topo do menu. */
+    --altura-cabecalho: 4rem;
+
+    /*
+      Zonas do aparelho onde nao se pode desenhar: notch/ilha no topo, barra de
+      gestos embaixo, cantos arredondados nas laterais em paisagem.
+
+      Estes valores so existem porque o index.html pede `viewport-fit=cover`. Sem
+      ele o iOS reserva o espaco sozinho, mas em troca deixa duas faixas pretas
+      no topo e embaixo — o site nunca encosta na borda da tela. Com `cover` o
+      site ocupa a tela inteira e nos devolvemos o respiro so onde e preciso.
+
+      O `0px` de reserva mantem tudo funcionando em navegador que nao conhece env().
+    */
+    --seguro-topo: env(safe-area-inset-top, 0px);
+    --seguro-base: env(safe-area-inset-bottom, 0px);
+    --seguro-esq: env(safe-area-inset-left, 0px);
+    --seguro-dir: env(safe-area-inset-right, 0px);
+}
+
+@media (min-width: 768px) {
+  :root { --altura-cabecalho: 5rem; }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Impede o iOS de aumentar a fonte sozinho ao girar o aparelho. */
+    -webkit-text-size-adjust: 100%;
+    }
+
+  body {
+    @apply bg-background text-foreground;
+    background-image: var(--halo);
+    background-attachment: fixed;
+    font-weight: 300;
+    /* Sem isso um filho estourando a largura gera rolagem lateral no celular. */
+    overflow-x: hidden;
+    }
+
+  h1, h2, h3 {
+    @apply font-heading;
+    font-weight: 500;
+    }
+
+  /*
+    O halo `fixed` no body custa repintura a cada rolagem em GPU movel. No celular
+    ele vira `scroll`, que o navegador consegue compor de uma vez.
+  */
+  @media (max-width: 767px) {
+    body { background-attachment: scroll; }
+  }
+}
+
+@layer components {
+  /*
+    Titulo com degrade metalico.
+
+    A COR SOLIDA VEM PRIMEIRO e vale por padrao. O degrade so entra depois, e so
+    onde ha certeza de que o navegador recorta o fundo no formato do texto.
+
+    Nao e zelo teorico. O `color: transparent` estava incondicional, apostando que
+    o `background-clip: text` sempre funcionaria. No navegador do Samsung ele nao
+    funciona: o degrade nunca era pintado e sobrava so o `transparent`. Os titulos
+    do site inteiro sumiam no celular — o que aparecia nas letras era o
+    fundo atras delas, nao a cor delas. Como o texto nao fica feio, fica AUSENTE,
+    o defeito passa despercebido em qualquer teste feito no desktop.
+  */
+  .titulo-metal {
+    color: var(--tema-champanhe-claro);
+    }
+
+  /*
+    O `@supports` sozinho nao bastaria — ha navegador que anuncia suporte e ainda
+    assim nao pinta. Por isso o degrade fica restrito a `md` para cima, onde esta
+    verificado. No celular o ganho visual e pequeno e o risco de sumir com o
+    titulo e real: a cor solida acima ja carrega o tom certo.
+  */
+  @media (min-width: 768px) {
+    @supports (-webkit-background-clip: text) or (background-clip: text) {
+      .titulo-metal {
+        background-image: var(--gradiente-titulo);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        }
+    }
+  }
+
+  /* Rotulo pequeno em versalete espacado — a nota tipografica do tema. */
+  .rotulo-seccao {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--tema-taupe);
+    font-weight: 400;
+    }
+
+  /* Superficie destacada do fundo: usada em cartoes e faixas de secao. */
+  .superficie {
+    background-color: var(--tema-superficie);
+    box-shadow: var(--sombra-carta);
+    }
+
+  /* ------------------------------------------------- areas seguras do aparelho */
+
+  /*
+    Laterais: em paisagem no iPhone o notch invade a esquerda e o canto
+    arredondado come a direita. `max()` garante que a margem nunca fique MENOR
+    que a do desenho — no Android, onde os insets sao zero, nada muda.
+  */
+  .lados-seguros {
+    padding-left: max(1rem, var(--seguro-esq));
+    padding-right: max(1rem, var(--seguro-dir));
+    }
+
+  @media (min-width: 768px) {
+    .lados-seguros {
+      padding-left: max(2rem, var(--seguro-esq));
+      padding-right: max(2rem, var(--seguro-dir));
+      }
+  }
+
+  /* Cabecalho fixo: desce o conteudo para nao ficar sob o relogio/bateria. */
+  .topo-seguro {
+    padding-top: var(--seguro-topo);
+    }
+
+  /*
+    NAO existe aqui uma `.base-segura` de proposito. O respiro inferior e
+    aplicado direto no ponto de uso, com utilitario do Tailwind:
+
+        pb-[max(0.75rem,env(safe-area-inset-bottom))]
+
+    Motivo: uma classe desta camada (`components`) perde para qualquer utilitario
+    de padding (`py-4`, `md:py-5`), que vem na camada `utilities`, depois. A
+    classe pareceria aplicada, o padding sumiria em silencio e a barra de gestos
+    do iPhone voltaria a cobrir o botao — bug invisivel em qualquer teste feito
+    no desktop.
+  */
+}
+
+/* --------------------------------------------------------------- ANIMACOES */
+
+@keyframes faixa {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+/* Varredura de luz que atravessa o slide em foco, como um flash de estudio. */
+@keyframes varredura {
+  0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: translateX(320%) skewX(-18deg); opacity: 0; }
+}
+
+@theme inline {
+    --animate-faixa: faixa 34s linear infinite;
+    --animate-varredura: varredura 1400ms ease-out;
+
+}
+
+@layer components {
+  /* ------------------------------------------------- revelacao ao rolar */
+  /*
+    700ms, nao 900ms. Com o escalonamento da entrada somado, o ultimo bloco levava
+    quase um segundo e meio para assentar — tempo suficiente para a pessoa ja ter
+    rolado para longe e nunca ver a animacao acontecer, so o resultado dela.
+    Elegante e diferente de lento.
+  */
+  .revelar {
+    opacity: 0;
+    transition:
+      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+  .revelar-baixo { transform: translateY(26px); }
+  .revelar-lado  { transform: translateX(-26px); }
+
+  /*
+    Entra desfocado, como uma lente acertando o foco.
+
+    O `filter` so e transicionado NESTA variante. Antes ele estava na regra base,
+    o que fazia todo bloco revelado carregar uma transicao de filtro que nunca
+    mudava de valor — trabalho anunciado ao navegador e nunca usado.
+  */
+  .revelar-foco {
+    transform: scale(1.03);
+    filter: blur(8px);
+    transition:
+      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+  /*
+    No celular, sem desfoque.
+
+    Desfoque animado e um shader que o navegador refaz a cada quadro, sobre a
+    area inteira do elemento — e esta variante cobre justamente os maiores, as
+    fotos grandes de capa. Numa GPU de celular isso disputa
+    quadros com a rolagem que a propria pessoa esta fazendo.
+
+    A escala sozinha ja le como "entrando em foco". Ninguem sente falta do
+    desfoque; todo mundo sente a rolagem travando.
+  */
+  @media (max-width: 767px) {
+    .revelar-foco {
+      filter: none;
+      transform: scale(1.02);
+      }
+  }
+
+  .revelado {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    }
+
+  /* ------------------------------------------------- cursor proprio */
+  .cursor-proprio,
+  .cursor-proprio a,
+  .cursor-proprio button,
+  .cursor-proprio [role='tab'],
+  .cursor-proprio [role='radio'] {
+    cursor: none;
+    }
+
+  /* Campos de texto mantem o cursor nativo: ali o I-beam informa onde se digita. */
+  .cursor-proprio input,
+  .cursor-proprio textarea,
+  .cursor-proprio select {
+    cursor: auto;
+    }
+
+  .cursor-anel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 95;
+    width: 2.25rem;
+    height: 2.25rem;
+    color: var(--tema-champanhe);
+    pointer-events: none;
+    opacity: 0.75;
+    /*
+      SEM `rotate` aqui. A rotacao do estado ativo entra dentro do MESMO
+      `transform` que o JS ja escreve a cada quadro (ver CursorDiafragma.tsx) —
+      nao como a propriedade `rotate` separada.
+
+      O motivo: quando `rotate`/`scale`/`translate` (as propriedades
+      individuais) coexistem com `transform` no mesmo elemento, a ordem de
+      composicao do CSS e translate -> rotate -> scale -> transform. Um
+      `rotate: 30deg` aqui rodava a caixa ANTES do `translate3d(mouseX,
+      mouseY, 0)` do JS aplicar — ou seja, girava em torno do canto (0,0) da
+      tela, nao do ponto onde o anel estava desenhado, e ele "pulava" para o
+      lado toda vez que passava por cima de um link ou campo.
+    */
+    transition:
+      width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 260ms ease;
+    }
+
+  /* Sobre algo clicavel o diafragma "fecha" — o giro em si vem do JS, junto do transform. */
+  .cursor-anel-ativo {
+    width: 3.25rem;
+    height: 3.25rem;
+    opacity: 1;
+    }
+
+  .cursor-ponto {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 96;
+    width: 0.3rem;
+    height: 0.3rem;
+    border-radius: 9999px;
+    background: var(--tema-champanhe);
+    pointer-events: none;
+    transition: opacity 200ms ease;
+    }
+
+  /* -------------------------------------------------- brilho do tema */
+  .brilho-tema {
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--tema-champanhe) 30%, transparent),
+      0 0 42px -12px color-mix(in oklab, var(--tema-champanhe) 60%, transparent);
+    }
+
+}
+
+/*
+  Menos movimento: para as animacoes decorativas, mas mantem o conteudo visivel.
+  A regra do `.revelar` precisa vir aqui tambem, senao o texto ficaria invisivel
+  para sempre — a transicao e o que o traria a tona.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    }
+
+  .revelar {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    }
+}

@@ -1,0 +1,35 @@
+# Recursos da Cloudflare deste projeto.
+#
+# Todos NOVOS e com nome proprio. Nada aqui e reaproveitado de nenhuma outra
+# conta ou projeto: se um recurso de outro site fosse compartilhado, apagar ou
+# renomear aquele projeto derrubaria este.
+#
+# Os `id` abaixo ficam vazios ate a conta existir. Eles saem prontos dos
+# comandos de criacao (ver README) e sao colados aqui — nao sao segredo, sao
+# identificadores publicos, entao podem ir para o git sem problema.
+
+name = "hub-eventos-ieq"
+compatibility_date = "2026-08-20"
+pages_build_output_dir = "dist"
+
+# Os arquivos das fotos: tres versoes WebP por foto, com chave
+# `<evento>/<uuid>-t|m|g.webp`.
+#
+# O binding e o que permite servir as fotos por dentro da Cloudflare, sem passar
+# pelo endereco `r2.dev` — que a propria Cloudflare diz ser so para
+# desenvolvimento e que devolve 429 quando aperta. Ver `src/lib/urls.ts`.
+[[r2_buckets]]
+binding = "FOTOS"
+bucket_name = "hub-eventos-ieq-fotos"
+
+# Os metadados: eventos e fotos. Ver `migrations/0001_inicial.sql`.
+[[d1_databases]]
+binding = "BANCO"
+database_name = "hub-eventos-ieq"
+database_id = ""
+migrations_dir = "migrations"
+
+[vars]
+# De onde as fotos sao servidas. Mesma chave de `VITE_BASE_FOTOS`, do lado do
+# servidor: "function" (padrao), "r2dev" ou "dominio".
+BASE_FOTOS = "function"

@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "es2023",
+    /*
+      "DOM" entra por causa dos testes: eles rodam no Node, mas cobrem funcoes
+      PURAS que moram dentro de modulos de navegador — `calcularDestino` em
+      `fotos.ts` (que tambem usa canvas e ImageBitmap) e `nomesUnicos` em
+      `zip.ts` (que tambem usa showSaveFilePicker). Importar o modulo para
+      testar a funcao pura obriga o TypeScript a entender o arquivo inteiro,
+      inclusive as partes de DOM que o teste nunca executa.
+
+      Isto e so tipagem: nao coloca nenhuma API de navegador dentro do Node em
+      tempo de execucao.
+    */
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "module": "nodenext",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["vite.config.ts", "src/**/*.test.ts"]
+}

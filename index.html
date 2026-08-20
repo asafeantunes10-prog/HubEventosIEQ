@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <title>Fotos dos Eventos — IEQ</title>
+    <meta
+      name="description"
+      content="As fotos dos eventos da igreja, reunidas num lugar so. Sem conta, sem pedido de permissao: e so abrir, ver e baixar."
+    />
+
+    <!--
+      Valores genericos de propósito. A Pages Function em `functions/_middleware.ts`
+      reescreve estas tres tags por evento (titulo, descricao e a capa) antes de a
+      pagina sair do servidor — sem isso, todo link colado no Instagram e no
+      WhatsApp apareceria com o mesmo texto e sem imagem, e e justamente por ali
+      que as pessoas chegam.
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Fotos dos Eventos — IEQ" />
+    <meta property="og:title" content="Fotos dos Eventos — IEQ" />
+    <meta
+      property="og:description"
+      content="As fotos dos eventos da igreja, reunidas num lugar so. Sem conta, sem pedido de permissao: e so abrir, ver e baixar."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="theme-color" content="#0a0908" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

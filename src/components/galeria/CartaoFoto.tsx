@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Download, ImageOff, Loader2 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
-import { urlFoto } from '@/lib/urls'
+import { urlFoto } from '@/lib/fotos'
 import type { Foto } from '@/lib/tipos'
 
 type Props = {
@@ -63,13 +63,12 @@ export function CartaoFoto({ foto, indice, aoAbrir, aoBaixar }: Props) {
           </span>
         ) : (
           <img
-            src={urlFoto(foto, 't')}
+            src={urlFoto(foto.caminho, 't')}
             alt={`Foto ${indice + 1}`}
             /*
               `lazy` + `async`: numa galeria de 500 fotos, o navegador so baixa
               o que esta perto da tela. Sem isto a pessoa esperaria 500
-              downloads antes de ver a primeira foto — e cada um deles gastaria
-              uma requisicao da quota diaria.
+              downloads antes de ver a primeira foto.
             */
             loading="lazy"
             decoding="async"

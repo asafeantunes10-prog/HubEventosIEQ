@@ -24,7 +24,8 @@ export function Home() {
       <div className="superficie brilho-tema mt-12 flex items-center gap-4 rounded-xl p-5">
         <Camera className="size-5 shrink-0 text-primary" aria-hidden />
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Fundação no ar. A lista de eventos e as galerias entram na próxima etapa.
+          Fundação no ar. A publicação de fotos e a lista de eventos entram nas próximas
+          etapas.
         </p>
       </div>
     </main>

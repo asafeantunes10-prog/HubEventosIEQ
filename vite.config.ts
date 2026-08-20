@@ -20,14 +20,16 @@ export default defineConfig({
   server: {
     watch: {
       /*
-        `fotos-entrada/` guarda os JPEG originais que alimentam o
-        `npm run publicar` — nunca sao servidos ao navegador.
+        `fotos/` guarda as versoes processadas de todos os eventos — milhares
+        de WebP, alguns GB. Fica fora do observador por dois motivos:
 
-        Fica fora do observador porque no Windows o arquivo continua travado
-        durante a copia: o observador do Vite morre com EBUSY ao tentar abrir
-        uma foto ainda sendo copiada, e leva o servidor junto.
+        1. Observar milhares de arquivos consome descritores a toa; o site nao
+           le nenhum deles em desenvolvimento pelo disco, e sim pela URL.
+        2. No Windows o arquivo continua travado durante a gravacao: o
+           observador do Vite morre com EBUSY ao tentar abrir uma foto que o
+           `npm run publicar` ainda esta escrevendo, e leva o servidor junto.
       */
-      ignored: ['**/fotos-entrada/**'],
+      ignored: ['**/fotos/**'],
     },
   },
 

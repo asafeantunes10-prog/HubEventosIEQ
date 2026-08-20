@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react'
 
-import { urlFoto } from '@/lib/urls'
+import { urlFoto } from '@/lib/fotos'
 import type { Foto } from '@/lib/tipos'
 
 type Props = {
@@ -25,9 +25,10 @@ const LIMIAR_ARRASTO = 50
  * nenhuma caixa). O que importava dele — foco preso, Escape, fundo travado —
  * sao as tres coisas implementadas abaixo.
  *
- * Aqui a foto exibida e a versao MEDIA (1080px), nao a grande: em tela cheia de
- * celular ela e indistinguivel da de 2048px e pesa um terco. A grande fica para
- * o download, que e quando o tamanho realmente importa.
+ * A foto exibida e a versao grande (2048px) — a mesma que vai para o download.
+ * Nao existe um tamanho intermediario de proposito: cada tamanho a mais custa
+ * 500 arquivos por evento, e o limite do plano gratuito e contagem de arquivos,
+ * nao banda. O LQIP e a miniatura ja no cache da grade cobrem a espera.
  */
 export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: Props) {
   const foto = fotos[indice]
@@ -86,7 +87,7 @@ export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: P
       const alvo = fotos[vizinho]
       if (alvo) {
         const img = new Image()
-        img.src = urlFoto(alvo, 'm')
+        img.src = urlFoto(alvo.caminho, 'g')
       }
     }
   }, [indice, fotos])
@@ -156,7 +157,7 @@ export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: P
       >
         <img
           key={foto.id}
-          src={urlFoto(foto, 'm')}
+          src={urlFoto(foto.caminho, 'g')}
           alt={`Foto ${indice + 1}`}
           onClick={(e) => e.stopPropagation()}
           className="max-h-full max-w-full object-contain select-none"

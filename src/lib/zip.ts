@@ -6,16 +6,15 @@ import { downloadZip } from 'client-zip'
  *
  * POR QUE NAO NO SERVIDOR
  * Zipar 500 fotos de 450 KB significa mover 225 MB. Uma Pages Function tem
- * 10ms de CPU e memoria apertada — nao chega perto. E ainda seria o mesmo
- * trafego contado duas vezes: R2 -> funcao, funcao -> visitante. Aqui o arquivo
- * vai do R2 direto para o disco de quem pediu, e o unico custo e o download que
- * ele ia fazer de qualquer jeito.
+ * 10ms de CPU e memoria apertada — nao chega perto. Aqui o arquivo vai do site
+ * direto para o disco de quem pediu, e o unico custo e o download que ele ia
+ * fazer de qualquer jeito.
  *
- * O CUSTO QUE IMPORTA: uma requisicao por foto. Um ZIP de 500 fotos gasta 500
- * das 100 mil requisicoes diarias de uma vez — cerca de 200 downloads completos
- * por dia. E bastante para uma igreja, mas e o numero que pode apertar num
- * evento muito concorrido, e o motivo de existir a chave `BASE_FOTOS` em
- * `urls.ts`.
+ * E NAO HA CUSTO DE QUOTA. As fotos sao assets estaticos do Pages, onde
+ * requisicao e gratis e ilimitada. Se elas fossem servidas por uma Function,
+ * este ZIP gastaria UMA REQUISICAO POR FOTO — 500 de uma vez, das 100 mil
+ * diarias — e um evento concorrido poderia derrubar o site para todo mundo.
+ * Foi essa conta que decidiu a arquitetura.
  *
  * POR QUE `client-zip` E NAO `jszip`
  * O JSZip monta o arquivo inteiro em memoria antes de entregar: 200 fotos de
@@ -31,7 +30,7 @@ import { downloadZip } from 'client-zip'
  */
 
 export type FotoParaZip = {
-  /** URL da versao grande (2048px) — a que vai para o disco. */
+  /** URL da versao grande (2048px) — sai de `urlFoto(caminho, 'g')`. */
   url: string
   /** Nome do arquivo dentro do ZIP, ja com extensao. */
   nome: string
@@ -244,8 +243,8 @@ async function tentarSalvarNoDisco(
  * Dois caminhos, e a diferenca entre eles importa:
  *
  * 1. `showSaveFilePicker` (Chrome, Edge, Opera): a pessoa escolhe onde salvar
- *    ANTES de comecar, e os bytes vao do R2 para o disco em fluxo. Um evento de
- *    5 GB funcionaria num computador com 4 GB de RAM.
+ *    ANTES de comecar, e os bytes vao da rede para o disco em fluxo. Um evento
+ *    de 5 GB funcionaria num computador com 4 GB de RAM.
  * 2. Queda (Firefox, Safari, ou quando o caminho 1 e barrado pela maquina):
  *    monta o Blob inteiro em memoria e so entao dispara o download. Um evento
  *    de 500 fotos da ~225 MB e passa tranquilo; e a razao de a tela oferecer
@@ -303,12 +302,14 @@ export async function baixarUma(url: string, nome: string): Promise<void> {
   const objeto = URL.createObjectURL(blob)
 
   /*
-    Passa pelo Blob em vez de apontar o link direto para a foto. Com
-    `BASE_FOTOS` em `function` a origem e a mesma e o `<a download>` bastaria,
-    mas nas outras duas estrategias (`r2dev`, `dominio`) ela deixa de ser — e
-    para outro dominio o navegador IGNORA o atributo `download` por seguranca.
-    Sem isto, trocar a estrategia faria o botao "baixar" passar a ABRIR a foto
-    numa aba em vez de salva-la, sem ninguem mudar uma linha desta tela.
+    Passa pelo Blob em vez de apontar o link direto para a foto.
+
+    Hoje a foto e servida pela mesma origem do site e um `<a download>` simples
+    bastaria. Mas o navegador IGNORA o atributo `download` quando o arquivo vem
+    de outro dominio, por seguranca — entao, no dia em que as fotos mudarem de
+    lugar (ver `urlFoto()` em `fotos.ts`), o botao "baixar" passaria a ABRIR a
+    foto numa aba em vez de salva-la, sem ninguem ter mexido nesta tela. O Blob
+    e o que mantem essa mudanca barata.
   */
   const link = document.createElement('a')
   link.href = objeto

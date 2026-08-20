@@ -8,17 +8,15 @@
 
 export type StatusEvento = 'rascunho' | 'publicado'
 export type LayoutEvento = 'mosaico' | 'uniforme'
-export type OrdemFotos = 'envio' | 'nome' | 'data'
-
-/** As tres versoes WebP que cada foto tem no R2. */
-export type TamanhoFoto = 't' | 'm' | 'g'
 
 export type Foto = {
   id: string
   eventoId: string
-  /** Prefixo no R2: `<evento>/<uuid>`. As versoes saem dele com `-t`, `-m`, `-g`. */
-  chave: string
-  extensao: string
+  /**
+   * `culto-jovens-2026/a1b2` — SEM sufixo de tamanho e SEM extensao. Quem
+   * completa e `urlFoto()`, o unico lugar que sabe de onde vem uma foto.
+   */
+  caminho: string
   nomeOriginal: string | null
   /** Dimensoes da versao grande. Reservam o espaco na grade e evitam pulo. */
   largura: number | null
@@ -30,6 +28,7 @@ export type Foto = {
 
 export type Evento = {
   id: string
+  /** Tambem e o nome da pasta em `fotos/` e o endereco em `/e/:slug`. */
   slug: string
   titulo: string
   descricao: string | null
@@ -44,14 +43,15 @@ export type Evento = {
   /** Hex; sobrescreve `--primary` so na pagina deste evento. */
   corDestaque: string | null
   layout: LayoutEvento
-  ordemFotos: OrdemFotos
+  /**
+   * `true` quando as versoes grandes foram apagadas para liberar arquivos. A
+   * grade continua de pe pelas miniaturas; o que some e o download.
+   */
+  arquivado: boolean
   totalFotos: number
 }
 
-/** Um evento com a pagina de fotos ja paginada. */
 export type EventoComFotos = {
   evento: Evento
   fotos: Foto[]
-  /** Deslocamento da proxima pagina, ou `null` quando acabou. */
-  proximo: number | null
 }

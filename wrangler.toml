@@ -1,10 +1,14 @@
 # Recursos da Cloudflare deste projeto.
 #
-# Todos NOVOS e com nome proprio. Nada aqui e reaproveitado de nenhuma outra
-# conta ou projeto: se um recurso de outro site fosse compartilhado, apagar ou
-# renomear aquele projeto derrubaria este.
+# So D1 e Pages, e isso e deliberado: nenhum servico usado aqui pede cartao de
+# credito. O R2 pede, mesmo no plano gratuito, e por isso esta fora — as fotos
+# sao arquivos estaticos publicados junto com o site. Se alguma solucao futura
+# parecer pedir "so cadastrar um cartao", e o caminho errado.
 #
-# O `database_id` abaixo fica vazio ate a conta existir: ele sai pronto do
+# Tudo com nome proprio e conta propria. Nada e reaproveitado de outro projeto:
+# se um recurso compartilhado fosse apagado la, este site cairia junto.
+#
+# O `database_id` fica vazio ate a conta existir: ele sai pronto do
 # `wrangler d1 create` e e colado aqui. Nao e segredo, e um identificador
 # publico — pode ir para o git sem problema.
 
@@ -12,24 +16,12 @@ name = "hub-eventos-ieq"
 compatibility_date = "2026-08-20"
 pages_build_output_dir = "dist"
 
-# Os arquivos das fotos: tres versoes WebP por foto, com chave
-# `<evento>/<uuid>-t|m|g.webp`.
+# Os metadados dos eventos e das fotos. Ver `migrations/0001_inicial.sql`.
 #
-# O binding e o que permite servir as fotos por dentro da Cloudflare, sem passar
-# pelo endereco `r2.dev` — que a propria Cloudflare diz ser so para
-# desenvolvimento e que devolve 429 quando aperta. Ver `src/lib/urls.ts`.
-[[r2_buckets]]
-binding = "FOTOS"
-bucket_name = "hub-eventos-ieq-fotos"
-
-# Os metadados: eventos e fotos. Ver `migrations/0001_inicial.sql`.
+# As IMAGENS nao passam por aqui nem por Function nenhuma: elas sao servidas
+# como assets estaticos em `/fotos/...`, onde requisicao e gratis e ilimitada.
 [[d1_databases]]
 binding = "BANCO"
 database_name = "hub-eventos-ieq"
 database_id = ""
 migrations_dir = "migrations"
-
-[vars]
-# De onde as fotos sao servidas. Mesma chave de `VITE_BASE_FOTOS`, do lado do
-# servidor: "function" (padrao), "r2dev" ou "dominio".
-BASE_FOTOS = "function"

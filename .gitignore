@@ -23,10 +23,16 @@ dist-ssr
 *.sln
 *.sw?
 
-# Fotos: entrada e saida do `npm run publicar`. Centenas de MB por evento.
-fotos-entrada
-saida
+# AS FOTOS PROCESSADAS. Alguns GB de imagem num repositorio deixam qualquer
+# operacao lenta e estouram os limites do GitHub, entao `fotos/` fica de fora.
+#
+# ATENCAO: como ela nao esta no git, ELA NAO TEM BACKUP AUTOMATICO. As fotos
+# moram nesta maquina e sao publicadas daqui; se a pasta se perder, nao ha de
+# onde republicar. Guarde uma copia num HD externo ou no Drive — isso e
+# obrigacao do projeto, nao zelo excessivo. Ver o README.
+fotos
 
 # Estado local do wrangler (banco D1 de desenvolvimento, cache).
 .wrangler
 .dev.vars
+.env*

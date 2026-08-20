@@ -4,9 +4,9 @@
 # conta ou projeto: se um recurso de outro site fosse compartilhado, apagar ou
 # renomear aquele projeto derrubaria este.
 #
-# Os `id` abaixo ficam vazios ate a conta existir. Eles saem prontos dos
-# comandos de criacao (ver README) e sao colados aqui — nao sao segredo, sao
-# identificadores publicos, entao podem ir para o git sem problema.
+# O `database_id` abaixo fica vazio ate a conta existir: ele sai pronto do
+# `wrangler d1 create` e e colado aqui. Nao e segredo, e um identificador
+# publico — pode ir para o git sem problema.
 
 name = "hub-eventos-ieq"
 compatibility_date = "2026-08-20"

@@ -32,14 +32,11 @@ database_name = "hub-eventos-ieq"
 database_id = "dff2fae3-bac7-42bd-88c6-fbc43c8a2ddb"
 migrations_dir = "migrations"
 
-# Protecao do painel admin. Nenhum dos dois e segredo — sao identificadores
-# publicos do lado do Access, nao credenciais — entao podem ir para o git.
+# Protecao do painel admin: NAO aparece aqui.
 #
-# Vazios ate o Asafe criar a equipe no Cloudflare Access e a aplicacao para
-# `/admin*`. Enquanto estiverem vazios, `functions/api/admin/_middleware.ts`
-# barra TODA requisicao a `/api/admin/*` com 503 — de proposito, ver o
-# comentario la. Preencher os dois e o unico passo que falta para o painel
-# ligar de verdade; nenhum codigo precisa mudar.
-[vars]
-ACESSO_DOMINIO = ""
-ACESSO_AUD = ""
+# A ideia original era Cloudflare Access, mas criar a equipe no Zero Trust
+# pede cartao de credito mesmo no plano gratuito (confirmado na pratica) —
+# mesmo motivo que tirou o R2 do projeto. A alternativa e uma senha unica, e
+# as duas pecas que ela precisa (SENHA_HASH, SESSAO_SEGREDO) sao SECRETS, nao
+# vars: configuradas por `wrangler pages secret put` e `scripts/gerar-senha.mjs`,
+# nunca escritas neste arquivo nem versionadas. Ver `functions/api/admin/_middleware.ts`.

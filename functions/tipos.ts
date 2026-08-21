@@ -1,6 +1,8 @@
 /**
  * O ambiente que toda Pages Function recebe: os bindings e variaveis
- * declarados no `wrangler.toml`.
+ * declarados no `wrangler.toml`, mais os secrets (esses NUNCA aparecem no
+ * arquivo — sao configurados por `wrangler pages secret put` e vivem so na
+ * Cloudflare).
  *
  * As fotos NAO passam por Function nenhuma — sao arquivos estaticos em
  * `/fotos/...` — entao nao ha binding de armazenamento para declarar.
@@ -9,13 +11,15 @@ export type Env = {
   BANCO: D1Database
 
   /**
-   * Dominio da equipe no Cloudflare Access, tipo `nomedaigreja.cloudflareaccess.com`.
-   * Sai do painel do Access quando o Asafe cria a equipe. Enquanto nao existir,
-   * `functions/api/admin/_middleware.ts` barra TODO acesso a `/api/admin/*` —
-   * ver o comentario la para o porque disso ser proposital.
+   * Hash PBKDF2 da senha do painel (`pbkdf2:<iteracoes>:<sal>:<hash>`),
+   * gerado por `scripts/gerar-senha.mjs`. Secret, nunca var — nunca aparece
+   * no `wrangler.toml` nem no git.
    */
-  ACESSO_DOMINIO?: string
+  SENHA_HASH?: string
 
-  /** O "Application Audience (AUD) Tag" da aplicacao Access criada para `/admin`. */
-  ACESSO_AUD?: string
+  /**
+   * Chave usada para assinar (HMAC-SHA256) o cookie de sessao do painel.
+   * Gerada junto com `SENHA_HASH` — ver `functions/lib/sessao.ts`.
+   */
+  SESSAO_SEGREDO?: string
 }

@@ -55,49 +55,50 @@ revisada com cuidado (inclusive a distinção entre "a pessoa fechou o diálogo 
 "o cancelamento pelo botão abortou o fetch", que precisavam parecer a mesma coisa na
 tela), mas **vale um teste manual no navegador** antes de divulgar o site.
 
-**Etapa 5 (Painel admin) — código concluído; Access ainda não existe.** As telas
-(`PainelEventos`, `NovoEvento`, `EditarEvento`) e a API completa
-(`functions/api/admin/eventos.ts`, `.../eventos/[id].ts`, `.../eventos/[id]/fotos.ts`) estão
-escritas e testadas. Falta só uma coisa, e ela é do Asafe: **criar a equipe no Cloudflare
-Access e a aplicação para `/admin`** — ver a seção "Pare nas ações que dependem do Asafe"
-mais abaixo.
+**Etapa 5 (Painel admin) — concluída, incluindo a proteção.** As telas (`PainelEventos`,
+`NovoEvento`, `EditarEvento`) e a API completa (`functions/api/admin/eventos.ts`,
+`.../eventos/[id].ts`, `.../eventos/[id]/fotos.ts`) estão escritas e testadas.
 
-`functions/api/admin/_middleware.ts` valida o JWT do Access contra as chaves públicas da
-Cloudflare (RSASSA-PKCS1-v1_5/SHA-256, com cache de 1h) — **fechado por padrão**:
-`ACESSO_DOMINIO`/`ACESSO_AUD` (`wrangler.toml`) nascem vazios, e sem os dois NENHUMA
-requisição a `/api/admin/*` passa (503), nem por engano. Isso foi testado de duas formas:
+**O Cloudflare Access saiu do projeto.** Criar a equipe no Zero Trust pede cartão de
+crédito mesmo escolhendo o plano gratuito — o Asafe confirmou isso na prática, mesmo
+motivo que já tinha tirado o R2. No lugar: **uma senha única**, sem conta por pessoa.
 
-1. A criptografia isolada — gerei um par de chaves RSA de verdade, assinei um JWT como o
-   Access assinaria, e confirmei que a verificação aceita o token bom e rejeita payload
-   adulterado, assinatura de outra chave, `exp` vencido, `aud` errada e `iss` errado (7 de
-   7 checagens).
-2. As rotas de CRUD contra o D1 local, com o middleware neutralizado só para o teste (e
-   restaurado byte a byte depois, `diff` confirmado): criar, listar, editar, validações
-   (slug duplicado, cor/data/status inválidos, `capaId` de outro evento recusado),
-   reordenar fotos (inclusive lista incompleta/estranha recusada) e apagar com cascata nas
-   fotos — tudo confirmado no D1 de verdade, não em teoria.
+- `functions/lib/senha.ts` — hash **PBKDF2-HMAC-SHA256 com só 5.000 iterações**, calibrado
+  contra o teto real de 10ms de CPU das Pages Functions (medido no runtime de verdade via
+  `wrangler pages dev`: 5.000 iterações ≈ 4ms; 100.000 ≈ 65ms, estouraria o teto e mataria
+  a própria requisição de login). Por isso a segurança aqui depende do **tamanho da
+  senha**, não do custo do hash — `scripts/gerar-senha.mjs` sorteia 20 caracteres por
+  padrão. O número de iterações fica gravado dentro do próprio hash
+  (`pbkdf2:<n>:<sal>:<hash>`), então gerar e verificar nunca podem discordar.
+- `functions/lib/sessao.ts` — cookie de sessão assinado por HMAC (`HttpOnly`, `Secure`,
+  `SameSite=Strict`), 7 dias.
+- `functions/api/login.ts` — a única porta de entrada, com **limitador por IP no D1**
+  (tabela `tentativas_login`, migração `0002`): 10 tentativas erradas por 15 minutos, e
+  isso vale mesmo que a 11ª tentativa acerte a senha.
+- `functions/api/admin/_middleware.ts` continua **fechado por padrão**: sem
+  `SENHA_HASH`/`SESSAO_SEGREDO` (secrets — nunca em `wrangler.toml`, nunca no git),
+  `/api/admin/*` inteiro volta 503.
+- `scripts/gerar-senha.mjs` gera os dois secrets. Já rodei uma vez: os secrets estão
+  configurados em produção (`wrangler pages secret put`), e a senha foi mostrada ao Asafe
+  uma única vez para ele guardar num gerenciador de senhas — **ninguém mais tem acesso a
+  ela**, nem este arquivo. Trocar a senha no futuro é rodar o script nomo com o novo valor.
 
-**O que não deu para testar:** o fluxo completo com um Access real (login Google, o
-header `Cf-Access-Jwt-Assertion` chegando de verdade). Antes de confiar nisto em produção:
-depois que o Asafe preencher as duas variáveis, abra `/admin` deslogado (tem que barrar) e
-confira os logs de uma Function se algo parecer errado.
+**Testado de ponta a ponta contra o site publicado**, não só em teoria: sem cookie barra
+(401), senha errada barra (401), 10 erradas + a 11ª (mesmo que certa) barra (429), senha
+certa entrega um cookie que a API aceita (200), logout apaga o cookie e a chamada seguinte
+volta a barrar (401). O único jeito de validar esse último passo direito foi usar um jar de
+cookie de verdade (`curl -b arquivo -c arquivo`, lendo E escrevendo) — só com `-b` o teste
+mentia "continua autenticado" porque o curl nunca aplicava o `Set-Cookie` da resposta.
 
-**Decisão consciente:** sem Access configurado, a *página* `/admin` continua visitável por
-qualquer um (é só HTML/JS do SPA) — mas toda chamada às Functions volta 401/503, então não
-há dado nenhum para ver. Isso é o que o plano descreve: "esconder o botão não é
-segurança", e o contrário também vale — a página existir sem fazer nada não é uma falha de
-segurança. O Access, uma vez configurado, também passa a barrar a própria página no edge.
-
-**Reordenar fotos é por botão (subir/descer), não arrastar** — decisão deliberada: drag-
-and-drop é ruim no toque de celular, e é de celular que o plano pede para o painel
+**Reordenar fotos é por botão (subir/descer), não arrastar** — decisão deliberada:
+drag-and-drop é ruim no toque de celular, e é de celular que o plano pede para o painel
 funcionar.
 
-O deploy desta etapa teve um erro `7403` isolado do D1 remoto ("account not authorized")
-numa primeira tentativa; a segunda, imediatamente depois, passou sem mudar nada — e uma
-consulta direta (`wrangler d1 execute --remote`) também funcionou no meio das duas. Parece
-um soluço passageiro da API da Cloudflare, não um problema de escopo do token (`d1 (write)`
-aparece em `wrangler whoami`) nem do código. Registrando caso se repita: se
-`npm run publicar` falhar com `7403`, rodar de novo antes de suspeitar de outra coisa.
+Um erro `7403` isolado do D1 remoto ("account not authorized") apareceu uma vez durante um
+deploy desta etapa; rodar de novo, sem mudar nada, resolveu. Parece soluço passageiro da
+API da Cloudflare, não escopo de token (`d1 (write)` aparece em `wrangler whoami`) nem bug.
+Registrando caso se repita: se `npm run publicar` falhar com `7403`, rode de novo antes de
+suspeitar de outra coisa.
 
 **Próxima: etapa 6 — compartilhamento e acabamento.** Meta tags OG por evento via
 HTMLRewriter, `robots.txt`, página 404 de verdade (ver o item abaixo) e o README.
@@ -122,11 +123,15 @@ plano e risque este item.
 
 O Asafe não tem cartão disponível. Isso é restrição dura, não preferência.
 
-**O Cloudflare R2 está fora do projeto** porque exige cartão mesmo no plano grátis. Se a
-solução mais óbvia para um problema parecer "põe no R2" — ou qualquer serviço que peça
+**O Cloudflare R2 está fora do projeto** porque exige cartão mesmo no plano grátis.
+**O Cloudflare Access também está fora**, pelo mesmo motivo: criar a equipe no Zero Trust
+pede cartão mesmo escolhendo o plano gratuito — confirmado na prática. Se a solução mais
+óbvia para um problema parecer "põe no R2" ou "usa o Access" — ou qualquer serviço que peça
 cartão na ativação — **pare e diga isso a ele**. É o caminho errado.
 
-Pages, Pages Functions, D1 e Access não pedem cartão. É com isso que se trabalha.
+Pages, Pages Functions e D1 não pedem cartão. É com isso que se trabalha. O painel admin é
+protegido por uma senha própria (`functions/api/login.ts`), não por Access — ver a etapa 5
+em "Onde retomar".
 
 ### 2. Este projeto é independente de `c:\Projetos\LandingPageAS`
 
@@ -139,15 +144,13 @@ Proibido: `import` que saia da pasta, alias de TS ou Vite apontando para fora, `
 
 ### 3. Pare nas ações que dependem do Asafe
 
-Criar conta, `wrangler login`, criar projeto Pages, ligar o Cloudflare Access — tudo que
-exige navegador ou decisão dele. Diga exatamente o que fazer e espere. Não contorne.
+Criar conta, `wrangler login`, criar projeto Pages — tudo que exige navegador ou decisão
+dele. Diga exatamente o que fazer e espere. Não contorne.
 
-**O Cloudflare Access, especificamente:** criar a equipe (escolhe um nome, vira
-`<nome>.cloudflareaccess.com`), uma aplicação self-hosted apontando para
-`eventos-ieq.pages.dev/admin*`, política por e-mail com provedor Google. No fim ele mostra
-o **Application Audience (AUD) Tag**. As duas informações — o domínio da equipe e o AUD —
-vão em `wrangler.toml`, em `ACESSO_DOMINIO` e `ACESSO_AUD` (hoje vazios). Preencher os dois
-é o único passo que falta para o painel ligar de verdade; nenhum código precisa mudar.
+O Cloudflare Access **não faz mais parte do plano** (ver a regra 1) — não peça para o
+Asafe configurar Access. A senha do painel já está gerada e configurada
+(`SENHA_HASH`/`SESSAO_SEGREDO`, secrets na Cloudflare); trocá-la é rodar
+`npm run gerar-senha` e aplicar os dois comandos que ele imprime.
 
 ### 4. Convenção de idioma
 

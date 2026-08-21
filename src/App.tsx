@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { LimiteDeErro } from '@/components/LimiteDeErro'
+import { ProtegerAdmin } from '@/components/admin/ProtegerAdmin'
 import { Home } from '@/pages/Home'
 import { Evento } from '@/pages/Evento'
 import { PainelEventos } from '@/pages/admin/PainelEventos'
@@ -26,15 +27,36 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/e/:slug" element={<Evento />} />
           {/*
-            O Cloudflare Access protege /admin* no EDGE, antes de qualquer uma
-            destas paginas chegar a carregar — ver `functions/api/admin/_middleware.ts`
-            para a protecao que vale de verdade, contra a API. Enquanto o Access
-            nao existir, estas rotas ficam visiveis mas inuteis: toda chamada as
-            Functions de admin volta 503.
+            `ProtegerAdmin` pede a senha antes de mostrar qualquer coisa daqui
+            para baixo. A protecao que vale de verdade e a mesma senha
+            validada de novo no servidor, em `functions/api/admin/_middleware.ts`
+            — sem ela, nenhuma chamada as Functions de admin funciona, e isto
+            aqui sozinho so estaria escondendo o botao.
           */}
-          <Route path="/admin" element={<PainelEventos />} />
-          <Route path="/admin/eventos/novo" element={<NovoEvento />} />
-          <Route path="/admin/eventos/:id" element={<EditarEvento />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtegerAdmin>
+                <PainelEventos />
+              </ProtegerAdmin>
+            }
+          />
+          <Route
+            path="/admin/eventos/novo"
+            element={
+              <ProtegerAdmin>
+                <NovoEvento />
+              </ProtegerAdmin>
+            }
+          />
+          <Route
+            path="/admin/eventos/:id"
+            element={
+              <ProtegerAdmin>
+                <EditarEvento />
+              </ProtegerAdmin>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </LimiteDeErro>

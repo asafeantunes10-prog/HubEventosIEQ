@@ -13,34 +13,39 @@ fonte da verdade sobre o **que** construir. Este arquivo diz **onde o trabalho p
 
 **Etapa 1 (Fundação) — concluída.** Vite + React + TS, Tailwind v4 CSS-first, design
 system trazido do molde e limpo, repositório próprio, banco D1 criado e migrado (local e
-remoto). Build e lint passam.
+remoto).
 
-**Próxima: etapa 2 — o script de publicação** (`scripts/publicar.mjs`).
+**Etapa 2 (Script de publicação) — concluída, menos o deploy.** `scripts/publicar.mjs`
+faz o caminho inteiro: gera `-t.webp` (400px) e `-g.webp` (2048px), extrai o LQIP, grava
+os metadados no D1, apaga arquivos órfãos, escreve um espelho `fotos.json`, roda o build e
+popula `dist/fotos/` por hardlink. É **retomável**: compara `nome_original` com o banco e
+pula o que já passou, continuando a numeração de `ordem` sem buraco.
 
-O núcleo já existe e está testado: gera `-t.webp` (400px) e `-g.webp` (2048px) com
-`sharp`, extrai LQIP de 20px, nunca amplia, grava em `fotos/<slug>/`, conta os arquivos do
-site e recusa rodar por cima de um evento já processado. Faltam três coisas, todas
-descritas no `PLANO.md`:
+Testado com 6 fotos: retomada após queda simulada, limpeza de órfãos, hardlink (mesmo
+inode) e escrita no D1 remoto. Há um evento de teste no banco de produção —
+`culto-de-teste-2026`, em **rascunho**, invisível no site. Serve para a etapa 3; apague
+quando não precisar mais.
 
-1. Inserir os metadados no D1 (hoje ele só escreve um `fotos.json` local).
-2. Tornar retomável de verdade — comparar `nome_original` com o que já está no D1, em vez
-   da guarda que hoje só recusa a pasta inteira.
-3. `vite build` → popular `dist/fotos/` por hardlink (`fs.link`, com queda para cópia) →
-   `wrangler pages deploy dist`.
+`scripts/d1.mjs` é a camada de banco, e o `arquivar.mjs` da etapa 6 deve reusá-la.
 
-**Bloqueio conhecido:** o projeto Pages ainda não existe. O primeiro
-`wrangler pages deploy` cria ele — **pergunte ao Asafe** antes, ele pode preferir criar
-pelo painel.
+**Próxima: etapa 3 — leitura pública.** As Functions `api/eventos.ts` e
+`api/eventos/[slug].ts`, a `Home.tsx` com a grade de eventos e a `Evento.tsx` com mosaico
+e visualizador. Os componentes de galeria já estão prontos e adaptados, esperando dados.
 
-### Duas pendências pequenas, herdadas da etapa 1
+**Bloqueio:** o projeto Pages não existe, então nada foi publicado ainda. O script detecta
+isso e para com a instrução, sem criar nada por conta própria. **Pergunte ao Asafe** antes
+— ele pode preferir criar pelo painel:
 
-- O teste de independência literal (renomear `c:\Projetos\LandingPageAS`) nunca rodou: o
-  VS Code mantém a pasta aberta e trava o rename. A prova equivalente passou — `npm ci &&
-  npm run build` numa cópia fora de `c:\Projetos`. Se a pasta estiver livre, rode o teste
-  do plano e risque este item.
-- O grep de verificação acha `R2` em `src/lib/fotos.ts` e `wrangler.toml`. São comentários
-  explicando **por que o R2 está proibido**, não vínculos. O Asafe ainda não decidiu se
-  saem.
+```
+npx wrangler pages project create hub-eventos-ieq --production-branch=main
+```
+
+### Pendência pequena, herdada da etapa 1
+
+O teste de independência literal (renomear `c:\Projetos\LandingPageAS`) nunca rodou: o
+VS Code mantém a pasta aberta e trava o rename. A prova equivalente passou — `npm ci &&
+npm run build` numa cópia fora de `c:\Projetos`. Se a pasta estiver livre, rode o teste do
+plano e risque este item.
 
 ---
 
@@ -117,9 +122,18 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
 - **`fotos/` está fora do git e não tem backup automático.** É onde moram os únicos
   originais processados. Se ela se perder, não há de onde republicar. Sempre que o assunto
   encostar nisso, lembre o Asafe da cópia no HD externo ou no Drive.
-- **`npm run publicar` ainda não é retomável.** Rodar duas vezes gerava UUIDs novos e
-  duplicava tudo em silêncio; hoje há uma guarda que recusa a pasta já processada. A
-  retomada por `nome_original` é parte da etapa 2.
+- **No D1 remoto, consulta tem que ir por `--command`, nunca por `--file`.** Com arquivo,
+  o wrangler trata como importação em lote e devolve um **resumo** ("Total queries
+  executed", "Rows read") dentro do campo `results`, no lugar das linhas. Quem espera as
+  linhas recebe um objeto com forma de linha e campos outros, e o erro só aparece muito
+  depois — no caso real, como `NOT NULL constraint failed: fotos.evento_id` depois de
+  processar todas as fotos. `consultar()` em `scripts/d1.mjs` já usa `--command` e tem uma
+  guarda que falha na hora se o resumo voltar. No `--local` isso não acontece, então o bug
+  só aparece contra produção.
+- **Retomar pode deixar arquivo órfão.** Se o script cair depois de gravar os WebP e antes
+  de gravar no banco, a execução seguinte reprocessa aqueles originais com identificadores
+  novos e os antigos ficam para trás — invisíveis no site, mas ocupando lugar no teto de
+  20.000. `limparOrfaos()` apaga todo WebP sem linha no banco, ao fim de cada execução.
 - **O lint tem dois avisos permanentes** — `set-state-in-effect` em `Imagem.tsx` (o caso
   da imagem em cache, explicado no comentário) e `only-export-components` em `button.tsx`
   (padrão do shadcn). São conhecidos. Não "conserte" nenhum dos dois.

@@ -1,6 +1,6 @@
 /**
- * Prepara as fotos de um evento: le uma pasta de originais da camera e gera as
- * duas versoes WebP que viram ARQUIVOS DO SITE.
+ * Publica um evento: le uma pasta de originais da camera, gera as duas versoes
+ * WebP, grava os metadados no D1 e manda o site para o ar.
  *
  * POR QUE ISTO EXISTE
  * -------------------
@@ -24,23 +24,42 @@
  * arquivos por evento: um intermediario de 1080px cortaria a vida util do site
  * de ~20 eventos para ~13. A troca foi consciente.
  *
- * Uso:  npm run publicar "C:\\Fotos\\Culto de Jovens 2026"
+ * RETOMAVEL. Se cair na foto 300 de 500 — queda de luz, rede, um Ctrl+C —
+ * rodar de novo continua de onde parou. O que ja esta no D1 e pulado pelo
+ * `nome_original`, entao nada e reprocessado nem duplicado.
  *
- * PENDENTE DA ETAPA 2: a insercao no D1, o hardlink de `fotos/` para `dist/` e
- * o `wrangler pages deploy` — todos dependem do `wrangler login` e do banco
- * criado na conta da Cloudflare. Ate la o script faz o processamento completo,
- * grava em `fotos/<slug>/` e escreve um `fotos.json` com os metadados, o que ja
- * permite conferir tamanho, tempo e qualidade antes de qualquer publicacao.
+ * Uso:
+ *   npm run publicar "C:\\Fotos\\Culto de Jovens 2026"
+ *   npm run publicar "C:\\Fotos\\..." -- --local        (banco de teste, sem deploy)
+ *   npm run publicar "C:\\Fotos\\..." -- --sem-deploy   (processa e grava, nao publica)
  */
 import sharp from 'sharp'
-import { readdirSync, mkdirSync, writeFileSync, existsSync, statSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import {
+  readdirSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  statSync,
+  linkSync,
+  copyFileSync,
+  rmSync,
+} from 'node:fs'
 import { resolve, basename } from 'node:path'
 import { randomUUID } from 'node:crypto'
+
+import { aspas, consultar, executar, executarEmLotes } from './d1.mjs'
 
 const RAIZ = resolve(import.meta.dirname, '..')
 
 /** Onde as fotos processadas moram. Fora do git — ver o aviso no `.gitignore`. */
 const PASTA_FOTOS = resolve(RAIZ, 'fotos')
+
+/** O que o `vite build` produz e o que o `pages deploy` envia. */
+const PASTA_DIST = resolve(RAIZ, 'dist')
+
+/** Precisa bater com `name` no `wrangler.toml`. */
+const PROJETO_PAGES = 'hub-eventos-ieq'
 
 /** As duas versoes. Os mesmos sufixos que `urlFoto()` monta em `src/lib/fotos.ts`. */
 const VERSOES = [
@@ -59,6 +78,17 @@ const QUALIDADE = 80
  * processamento acontece uma vez, o download acontece milhares de vezes.
  */
 const ESFORCO = 6
+
+/**
+ * Tamanho do identificador de cada foto, em digitos hexadecimais.
+ *
+ * 12 e nao 8. Com 8 digitos sao 4,3 bilhoes de combinacoes, o que parece muito
+ * — mas o paradoxo do aniversario diz outra coisa: em 10.000 fotos (20 eventos
+ * cheios) a chance de duas baterem passa de 1%. Como `id` e chave primaria, uma
+ * colisao nao daria erro visivel: o INSERT do lote falharia e uma foto sumiria
+ * da galeria sem explicacao. Com 12 digitos a chance cai para 1 em 5 milhoes.
+ */
+const DIGITOS_ID = 12
 
 /** Teto do plano gratuito, e o numero que decide quando arquivar. */
 const LIMITE_ARQUIVOS = 20_000
@@ -107,11 +137,10 @@ async function gerarLqip(entrada) {
 }
 
 /**
- * Quantos arquivos o site ja tem, somando todos os eventos.
+ * Quantos arquivos o site tem, somando todos os eventos.
  *
  * So conta `.webp`: e o que vai para o deploy e o que pesa contra o teto de
- * 20.000. Contar o `fotos.json` de cada evento inflaria o numero e faria o
- * alerta de arquivamento disparar cedo demais.
+ * 20.000. O `fotos.json` de cada evento fica de fora — ele nunca e publicado.
  */
 function contarArquivosDoSite() {
   if (!existsSync(PASTA_FOTOS)) return 0
@@ -125,15 +154,38 @@ function contarArquivosDoSite() {
     )
 }
 
+/**
+ * Roda uma ferramenta do projeto com o proprio Node.
+ *
+ * Chamar `npm` ou `npx` exigiria `shell: true` no Windows (os dois sao `.cmd`),
+ * e ai os argumentos passam a ser concatenados em vez de escapados. Apontar
+ * direto para o `.js` de cada ferramenta evita o shell inteiro.
+ */
+function rodarFerramenta(caminhoRelativo, args, rotulo) {
+  const r = spawnSync(process.execPath, [resolve(RAIZ, caminhoRelativo), ...args], {
+    stdio: 'inherit',
+    cwd: RAIZ,
+  })
+
+  if (r.status !== 0) throw new Error(`${rotulo} falhou (codigo ${r.status}).`)
+}
+
 // ---------------------------------------------------------------- argumentos
 
 function lerArgumentos() {
-  const pastaBruta = process.argv[2]
+  const args = process.argv.slice(2)
+  const local = args.includes('--local')
+  // `--local` grava no banco de teste da maquina, entao publicar nao faria
+  // sentido: o site no ar leria o banco de producao e nao acharia nada.
+  const semDeploy = args.includes('--sem-deploy') || local
+  const pastaBruta = args.find((a) => !a.startsWith('--'))
 
   if (!pastaBruta) {
     console.error(
       '\n  Uso: npm run publicar "C:\\Fotos\\Culto de Jovens 2026"\n\n' +
-        '  O nome da pasta vira o titulo do evento e o endereco no site.\n'
+        '  O nome da pasta vira o titulo do evento e o endereco no site.\n\n' +
+        '    --local        usa o banco de teste da maquina e nao publica\n' +
+        '    --sem-deploy   processa e grava no banco, mas nao publica\n'
     )
     process.exit(1)
   }
@@ -152,7 +204,166 @@ function lerArgumentos() {
     process.exit(1)
   }
 
-  return { pasta, titulo, slug }
+  return { pasta, titulo, slug, local, semDeploy }
+}
+
+// ---------------------------------------------------------------- o banco
+
+/**
+ * Acha o evento pelo slug, ou cria um novo.
+ *
+ * Nasce como RASCUNHO de proposito. Publicar e uma decisao humana, tomada
+ * depois de olhar a galeria pronta — nao um efeito colateral de processar
+ * fotos. Enquanto o painel nao existe, o comando para publicar sai no relatorio
+ * final.
+ */
+function garantirEvento(slug, titulo, opcoes) {
+  const achados = consultar(
+    `select id, titulo, status from eventos where slug = ${aspas(slug)};`,
+    opcoes
+  )
+
+  if (achados.length > 0) {
+    /*
+      Um evento sem `id` nao existe. Sem esta checagem o valor vazio seguiria
+      adiante e so apareceria como "NOT NULL constraint failed: fotos.evento_id"
+      no meio da gravacao — depois de todas as fotos ja terem sido processadas,
+      e com uma mensagem que nao aponta para a causa.
+    */
+    if (!achados[0].id) {
+      throw new Error(`O banco devolveu um evento sem id para o slug "${slug}".`)
+    }
+    return { ...achados[0], novo: false }
+  }
+
+  const id = randomUUID()
+  executar(
+    `insert into eventos (id, slug, titulo, status) values ` +
+      `(${aspas(id)}, ${aspas(slug)}, ${aspas(titulo)}, 'rascunho');`,
+    opcoes
+  )
+
+  return { id, titulo, status: 'rascunho', novo: true }
+}
+
+/**
+ * O que ja esta no banco para este evento.
+ *
+ * E daqui que sai a retomada: os nomes originais viram um conjunto, e o laco
+ * principal pula tudo que ja passou. A maior `ordem` continua a numeracao, para
+ * as fotos novas entrarem no fim da galeria em vez de embaralhar a existente.
+ */
+function fotosJaNoBanco(eventoId, opcoes) {
+  const linhas = consultar(
+    `select nome_original, ordem from fotos where evento_id = ${aspas(eventoId)};`,
+    opcoes
+  )
+
+  return {
+    nomes: new Set(linhas.map((l) => l.nome_original)),
+    proximaOrdem: linhas.reduce((maior, l) => Math.max(maior, (l.ordem ?? 0) + 1), 0),
+  }
+}
+
+function inserirFotos(eventoId, registros, opcoes) {
+  const comandos = registros.map(
+    (f) =>
+      `insert into fotos (id, evento_id, caminho, nome_original, largura, altura, lqip, ordem) values (` +
+      [
+        aspas(f.id),
+        aspas(eventoId),
+        aspas(f.caminho),
+        aspas(f.nome_original),
+        aspas(f.largura),
+        aspas(f.altura),
+        aspas(f.lqip),
+        aspas(f.ordem),
+      ].join(', ') +
+      ');'
+  )
+
+  executarEmLotes(comandos, {
+    ...opcoes,
+    aoProgredir: (feitas, total) => {
+      process.stdout.write(`\r  gravando no banco: ${feitas}/${total}`)
+      if (feitas === total) process.stdout.write('\n')
+    },
+  })
+}
+
+/**
+ * Apaga os WebP da pasta do evento que nao tem linha correspondente no banco.
+ *
+ * POR QUE ISTO PRECISA EXISTIR
+ * Uma retomada pode deixar lixo. Se o script cai DEPOIS de gravar os arquivos e
+ * ANTES de gravar no banco, a execucao seguinte nao reconhece aquelas fotos
+ * (a retomada compara pelo `nome_original`, que so existe no banco), reprocessa
+ * os mesmos originais e gera arquivos novos com identificadores novos. Os
+ * antigos ficam para tras: invisiveis no site, mas ocupando lugar no teto de
+ * 20.000 arquivos e subindo no deploy.
+ *
+ * Roda depois dos INSERTs, e so olha a pasta deste evento. O banco e a verdade:
+ * arquivo sem linha nao existe para o site.
+ */
+function limparOrfaos(slug, eventoId, destino, opcoes) {
+  const vivos = new Set(
+    consultar(`select caminho from fotos where evento_id = ${aspas(eventoId)};`, opcoes).map((l) =>
+      // 'culto-jovens-2026/a1b2' -> 'a1b2'
+      String(l.caminho).slice(slug.length + 1)
+    )
+  )
+
+  let apagados = 0
+  for (const nome of readdirSync(destino).filter((n) => n.endsWith('.webp'))) {
+    // '<id>-t.webp' -> '<id>'
+    const id = nome.replace(/-[tg]\.webp$/, '')
+    if (!vivos.has(id)) {
+      rmSync(resolve(destino, nome), { force: true })
+      apagados++
+    }
+  }
+
+  return apagados
+}
+
+/**
+ * Grava um `fotos.json` na pasta do evento, espelhando o que esta no banco.
+ *
+ * POR QUE UM ESPELHO, SE O D1 E A VERDADE
+ * Nem `fotos/` nem o D1 tem backup automatico — a pasta esta fora do git e o
+ * banco vive so na Cloudflare. Perder o banco deixaria os WebP no disco sem
+ * nenhuma forma de reconstruir a galeria: o nome do arquivo e um identificador
+ * sorteado, entao o que liga `8feb55da529f` a `IMG_0001.jpg`, a ordem, as
+ * dimensoes e o LQIP existe unicamente no D1.
+ *
+ * Com o espelho, a pasta do evento passa a ser autossuficiente: quem tiver a
+ * copia do HD externo consegue repovoar o banco inteiro. Custa alguns KB por
+ * evento e nunca e publicado (o deploy so leva `.webp`).
+ */
+function escreverEspelho(eventoId, destino, opcoes) {
+  const fotos = consultar(
+    'select id, caminho, nome_original, largura, altura, lqip, ordem ' +
+      `from fotos where evento_id = ${aspas(eventoId)} order by ordem;`,
+    opcoes
+  )
+
+  const evento = consultar(`select * from eventos where id = ${aspas(eventoId)};`, opcoes)[0]
+
+  writeFileSync(
+    resolve(destino, 'fotos.json'),
+    JSON.stringify({ evento, fotos }, null, 2),
+    'utf8'
+  )
+}
+
+/** `total_fotos` sai de uma contagem real, nunca de um acumulador. */
+function atualizarTotal(eventoId, opcoes) {
+  executar(
+    `update eventos set total_fotos = ` +
+      `(select count(*) from fotos where evento_id = ${aspas(eventoId)}) ` +
+      `where id = ${aspas(eventoId)};`,
+    opcoes
+  )
 }
 
 // ---------------------------------------------------------------- processamento
@@ -161,12 +372,12 @@ async function processarFoto(caminho, slug, ordem, destino) {
   const { width } = await sharp(caminho).metadata()
 
   /*
-    UUID curto, e nao o nome do arquivo. Duas razoes: nomes de camera se repetem
-    entre cartoes (`IMG_0001` sai de todo cartao zerado), e uma chave que nunca
-    muda deixa o navegador cachear a foto para sempre sem risco de mostrar uma
-    imagem velha no lugar de outra.
+    Identificador sorteado, e nao o nome do arquivo. Duas razoes: nomes de
+    camera se repetem entre cartoes (`IMG_0001` sai de todo cartao zerado), e
+    uma chave que nunca muda deixa o navegador cachear a foto para sempre sem
+    risco de mostrar uma imagem velha no lugar de outra.
   */
-  const id = randomUUID().slice(0, 8)
+  const id = randomUUID().replace(/-/g, '').slice(0, DIGITOS_ID)
 
   const gerados = []
   for (const versao of VERSOES) {
@@ -178,7 +389,7 @@ async function processarFoto(caminho, slug, ordem, destino) {
       .webp({ quality: QUALIDADE, effort: ESFORCO })
       .toFile(resolve(destino, `${id}-${versao.sufixo}.webp`))
 
-    gerados.push({ sufixo: versao.sufixo, largura: info.width, altura: info.height, bytes: info.size })
+    gerados.push({ largura: info.width, altura: info.height, bytes: info.size })
   }
 
   const grande = gerados.at(-1)
@@ -200,45 +411,119 @@ async function processarFoto(caminho, slug, ordem, destino) {
   }
 }
 
-async function principal() {
-  const { pasta, titulo, slug } = lerArgumentos()
+// ---------------------------------------------------------------- publicacao
 
-  const arquivos = readdirSync(pasta)
+/**
+ * Copia `fotos/` para dentro de `dist/` por hardlink.
+ *
+ * POR QUE AS FOTOS NAO MORAM EM `public/`
+ * O Vite copia `public/` inteiro a cada build. Com alguns GB de imagem la, todo
+ * `npm run dev` e todo build passariam minutos movendo bytes que nao mudaram.
+ *
+ * POR QUE HARDLINK, E NAO COPIA
+ * Um hardlink e um segundo nome para os MESMOS bytes no disco: e instantaneo e
+ * nao ocupa espaco nenhum. Copiar 20 eventos a cada publicacao seria mover
+ * ~6 GB para produzir uma segunda copia identica que sera apagada no proximo
+ * build. Quando o link nao e possivel — `dist/` noutra particao, ou um sistema
+ * de arquivos que nao suporta — cai para copia, que funciona igual, so mais
+ * devagar.
+ *
+ * TODOS OS EVENTOS, NAO SO O ATUAL. O `vite build` limpa o `dist/` e o
+ * `pages deploy` publica o que estiver la: mandar so o evento novo APAGARIA
+ * todas as fotos dos eventos anteriores do site.
+ */
+function popularDistComFotos() {
+  if (!existsSync(PASTA_FOTOS)) return { arquivos: 0, copiados: 0 }
+
+  const destinoRaiz = resolve(PASTA_DIST, 'fotos')
+  rmSync(destinoRaiz, { recursive: true, force: true })
+
+  let arquivos = 0
+  let copiados = 0
+
+  for (const entrada of readdirSync(PASTA_FOTOS, { withFileTypes: true })) {
+    if (!entrada.isDirectory()) continue
+
+    const origemPasta = resolve(PASTA_FOTOS, entrada.name)
+    const destinoPasta = resolve(destinoRaiz, entrada.name)
+    mkdirSync(destinoPasta, { recursive: true })
+
+    // So `.webp` atravessa: o `fotos.json` e metadado local, nunca um asset.
+    for (const nome of readdirSync(origemPasta).filter((n) => n.endsWith('.webp'))) {
+      const origem = resolve(origemPasta, nome)
+      const destino = resolve(destinoPasta, nome)
+
+      try {
+        linkSync(origem, destino)
+      } catch {
+        copyFileSync(origem, destino)
+        copiados++
+      }
+      arquivos++
+    }
+  }
+
+  return { arquivos, copiados }
+}
+
+/**
+ * O projeto Pages precisa existir antes do primeiro deploy.
+ *
+ * Perguntar antes e melhor que deixar o `pages deploy` criar sozinho: ele cria
+ * com o nome que estiver a mao e sem aviso, e desfazer isso depois significa
+ * apagar o projeto e perder o endereco `.pages.dev` que ja foi divulgado.
+ */
+function projetoPagesExiste() {
+  const r = spawnSync(
+    process.execPath,
+    [resolve(RAIZ, 'node_modules', 'wrangler', 'bin', 'wrangler.js'), 'pages', 'project', 'list'],
+    { encoding: 'utf8' }
+  )
+
+  if (r.status !== 0) return false
+  return (r.stdout ?? '').includes(PROJETO_PAGES)
+}
+
+function publicarNoPages() {
+  rodarFerramenta(
+    'node_modules/wrangler/bin/wrangler.js',
+    ['pages', 'deploy', 'dist', `--project-name=${PROJETO_PAGES}`],
+    'O deploy'
+  )
+}
+
+// ---------------------------------------------------------------- principal
+
+async function principal() {
+  const { pasta, titulo, slug, local, semDeploy } = lerArgumentos()
+  const opcoes = { local }
+
+  const todos = readdirSync(pasta)
     .filter((n) => EXTENSOES.test(n))
     // Ordem alfabetica = ordem do cartao da camera = ordem cronologica do evento.
     .sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }))
 
-  if (arquivos.length === 0) {
+  if (todos.length === 0) {
     console.error(`\n  A pasta "${pasta}" nao tem nenhuma imagem.\n`)
     process.exit(1)
   }
 
-  const destino = resolve(PASTA_FOTOS, slug)
+  console.log(`\n== ${titulo} ==`)
+  console.log(`   /e/${slug} — ${todos.length} fotos na pasta${local ? '  [banco local]' : ''}\n`)
 
-  /*
-    RECUSA rodar por cima de um evento que ja tem fotos.
+  const evento = garantirEvento(slug, titulo, opcoes)
+  const jaTem = fotosJaNoBanco(evento.id, opcoes)
 
-    A retomabilidade de verdade — continuar da foto 300 de 500 comparando
-    `nome_original` com o que ja esta no D1 — entra na etapa 2. Ate la, rodar o
-    script duas vezes na mesma pasta geraria UUIDs novos para as mesmas fotos e
-    DUPLICARIA tudo em silencio: 1.000 arquivos onde deviam existir 500, comendo
-    o dobro do teto de 20.000 sem ninguem perceber.
+  // A RETOMADA. O banco manda: o que ja esta la nao volta a ser processado.
+  const arquivos = todos.filter((n) => !jaTem.nomes.has(n))
+  const pulados = todos.length - arquivos.length
 
-    Falhar aqui e barato; descobrir a duplicata depois de publicar nao e.
-  */
-  if (existsSync(destino) && readdirSync(destino).some((n) => n.endsWith('.webp'))) {
-    console.error(
-      `\n  O evento "${slug}" ja tem fotos processadas em:\n  ${destino}\n\n` +
-        '  Rodar de novo duplicaria todas elas (a retomada por nome entra na\n' +
-        '  etapa 2, junto com o D1). Para refazer do zero, apague a pasta antes.\n'
-    )
-    process.exit(1)
+  if (pulados > 0) {
+    console.log(`  ${pulados} ja estavam no banco — retomando da ${pulados + 1}.\n`)
   }
 
+  const destino = resolve(PASTA_FOTOS, slug)
   mkdirSync(destino, { recursive: true })
-
-  console.log(`\n== ${titulo} ==`)
-  console.log(`   /e/${slug} — ${arquivos.length} fotos\n`)
 
   const registros = []
   let bytesEntrada = 0
@@ -249,7 +534,7 @@ async function principal() {
     const caminho = resolve(pasta, arquivo)
 
     try {
-      const r = await processarFoto(caminho, slug, indice, destino)
+      const r = await processarFoto(caminho, slug, jaTem.proximaOrdem + indice, destino)
 
       registros.push(r.registro)
       bytesEntrada += r.bytesEntrada
@@ -273,34 +558,104 @@ async function principal() {
 
   const minutos = ((Date.now() - comecou) / 60000).toFixed(1)
 
-  writeFileSync(
-    resolve(destino, 'fotos.json'),
-    JSON.stringify({ slug, titulo, total: registros.length, fotos: registros }, null, 2),
-    'utf8'
-  )
+  /*
+    O banco so e tocado DEPOIS de os arquivos existirem no disco.
+
+    A ordem importa: uma linha no D1 apontando para um arquivo que nao existe
+    produz uma foto quebrada na galeria, visivel para todo mundo. Um arquivo no
+    disco sem linha no banco e invisivel — e a proxima execucao o encontra pelo
+    `nome_original` e completa o registro.
+  */
+  if (registros.length > 0) {
+    inserirFotos(evento.id, registros, opcoes)
+    atualizarTotal(evento.id, opcoes)
+  }
+
+  const orfaos = limparOrfaos(slug, evento.id, destino, opcoes)
+  if (orfaos > 0) {
+    console.log(`  ${orfaos} arquivos orfaos de uma execucao anterior foram apagados.`)
+  }
+
+  escreverEspelho(evento.id, destino, opcoes)
 
   const totalArquivos = contarArquivosDoSite()
+  const totalNoBanco = consultar(
+    `select total_fotos from eventos where id = ${aspas(evento.id)};`,
+    opcoes
+  )[0]?.total_fotos
 
   console.log(
-    `\n  ${registros.length} de ${arquivos.length} fotos em ${minutos} min\n` +
-      `  ${mb(bytesEntrada)} de originais -> ${mb(bytesSaida)} em duas versoes\n` +
-      `  ${(bytesSaida / Math.max(registros.length, 1) / 1024).toFixed(0)} KB por foto` +
-      `  (estimativa do plano: 480 KB)\n\n` +
-      `  Gravado em ${destino}\n` +
-      `  O site tem ${totalArquivos.toLocaleString('pt-BR')} de ${LIMITE_ARQUIVOS.toLocaleString('pt-BR')} arquivos.\n`
+    `\n  ${registros.length} fotos novas em ${minutos} min` +
+      (pulados > 0 ? ` (${pulados} ja estavam)` : '') +
+      '\n' +
+      (registros.length > 0
+        ? `  ${mb(bytesEntrada)} de originais -> ${mb(bytesSaida)} em duas versoes\n` +
+          `  ${(bytesSaida / registros.length / 1024).toFixed(0)} KB por foto` +
+          `  (estimativa do plano: 480 KB)\n`
+        : '') +
+      `\n  O evento tem ${totalNoBanco} fotos no banco.\n` +
+      `  O site tem ${totalArquivos.toLocaleString('pt-BR')} de ` +
+      `${LIMITE_ARQUIVOS.toLocaleString('pt-BR')} arquivos.\n`
   )
 
   if (totalArquivos >= ALERTA_ARQUIVOS) {
     console.log(
       `  ATENCAO: passou de ${ALERTA_ARQUIVOS.toLocaleString('pt-BR')} arquivos.\n` +
-        `  Hora de arquivar os eventos antigos (npm run arquivar) — apagar as\n` +
-        `  versoes -g de quem tem mais de um ano libera ~94% dos arquivos deles.\n`
+        '  Hora de arquivar os eventos antigos (npm run arquivar) — apagar as\n' +
+        '  versoes -g de quem tem mais de um ano libera ~94% dos arquivos deles.\n'
     )
   }
 
+  /*
+    Com `--local` o banco escrito foi o de teste desta maquina. Construir o site
+    a partir dele produziria um `dist/` que nao corresponde a producao, entao a
+    execucao para aqui.
+  */
+  if (local) {
+    console.log('  Banco local: o site nao foi construido nem publicado.\n')
+    return
+  }
+
+  console.log('  Construindo o site...\n')
+  rodarFerramenta('node_modules/typescript/bin/tsc', ['-b'], 'A checagem de tipos')
+  rodarFerramenta('node_modules/vite/bin/vite.js', ['build'], 'O build')
+
+  const { arquivos: linkados, copiados } = popularDistComFotos()
   console.log(
-    `  O envio ao D1 e o deploy entram na etapa 2, quando a conta da Cloudflare existir.\n`
+    `\n  ${linkados.toLocaleString('pt-BR')} fotos em dist/fotos/` +
+      (copiados > 0 ? ` (${copiados} por copia, ${linkados - copiados} por hardlink)` : ' (por hardlink)')
   )
+
+  if (semDeploy) {
+    console.log('\n  --sem-deploy: o site esta pronto em dist/, mas nao foi publicado.')
+    console.log('  Para conferir antes: npm run preview\n')
+    return
+  }
+
+  if (!projetoPagesExiste()) {
+    console.log(
+      `\n  O site esta pronto em dist/, mas o projeto Pages "${PROJETO_PAGES}" ainda\n` +
+        '  nao existe — e o primeiro deploy o criaria sem perguntar, com o endereco\n' +
+        '  publico que vai ser divulgado. Crie ele antes:\n\n' +
+        `    npx wrangler pages project create ${PROJETO_PAGES} --production-branch=main\n\n` +
+        '  Depois rode este comando de novo: as fotos ja processadas serao puladas\n' +
+        '  e ele seguira direto para a publicacao.\n'
+    )
+    return
+  }
+
+  console.log()
+  publicarNoPages()
+
+  if (evento.status !== 'publicado') {
+    console.log(
+      `\n  O evento "${slug}" esta como RASCUNHO e ainda nao aparece no site.\n` +
+        '  Publicar e decisao sua, depois de conferir a galeria. Enquanto o painel\n' +
+        '  nao existe, o comando e:\n\n' +
+        `    npx wrangler d1 execute ${'hub-eventos-ieq'} --remote --command ` +
+        `"update eventos set status='publicado' where slug='${slug}'"\n`
+    )
+  }
 }
 
 principal().catch((e) => {

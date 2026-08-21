@@ -4,6 +4,7 @@ import { LimiteDeErro } from '@/components/LimiteDeErro'
 import { ProtegerAdmin } from '@/components/admin/ProtegerAdmin'
 import { Home } from '@/pages/Home'
 import { Evento } from '@/pages/Evento'
+import { NaoEncontrada } from '@/pages/NaoEncontrada'
 import { PainelEventos } from '@/pages/admin/PainelEventos'
 import { NovoEvento } from '@/pages/admin/NovoEvento'
 import { EditarEvento } from '@/pages/admin/EditarEvento'
@@ -57,6 +58,14 @@ export function App() {
               </ProtegerAdmin>
             }
           />
+          {/*
+            Coringa: qualquer caminho que nao bateu com nenhuma rota acima.
+            `functions/_middleware.ts` troca o status HTTP desta mesma casca
+            para 404 quando o caminho tambem nao esta na lista dele — os dois
+            precisam concordar sobre quais rotas sao "conhecidas", ou uma rota
+            de verdade arriscaria vir marcada como 404 por engano.
+          */}
+          <Route path="*" element={<NaoEncontrada />} />
         </Routes>
       </BrowserRouter>
     </LimiteDeErro>

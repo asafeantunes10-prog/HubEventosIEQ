@@ -8,11 +8,13 @@ import type { Foto } from '@/lib/tipos'
 type Props = {
   foto: Foto
   indice: number
+  /** `false` num evento arquivado — a versao -g nao existe mais, entao nao ha o que baixar. */
+  temVersaoGrande: boolean
   aoAbrir: (indice: number) => void
   aoBaixar: (foto: Foto, indice: number) => void
 }
 
-export function CartaoFoto({ foto, indice, aoAbrir, aoBaixar }: Props) {
+export function CartaoFoto({ foto, indice, temVersaoGrande, aoAbrir, aoBaixar }: Props) {
   const [carregou, setCarregou] = React.useState(false)
   const [falhou, setFalhou] = React.useState(false)
 
@@ -90,21 +92,23 @@ export function CartaoFoto({ foto, indice, aoAbrir, aoBaixar }: Props) {
         />
       </button>
 
-      <button
-        type="button"
-        onClick={() => aoBaixar(foto, indice)}
-        aria-label={`Baixar foto ${indice + 1}`}
-        className={cn(
-          'absolute right-2 bottom-2 flex size-10 items-center justify-center rounded-full',
-          'bg-black/45 text-white backdrop-blur-sm transition-all duration-300 hover:bg-black/65',
-          // No celular nao ha hover: o botao precisa estar sempre visivel, ou
-          // ninguem descobre que da para baixar foto a foto. No desktop ele
-          // aparece ao passar o mouse, deixando a foto limpa.
-          'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100'
-        )}
-      >
-        <Download className="size-4" aria-hidden />
-      </button>
+      {temVersaoGrande && (
+        <button
+          type="button"
+          onClick={() => aoBaixar(foto, indice)}
+          aria-label={`Baixar foto ${indice + 1}`}
+          className={cn(
+            'absolute right-2 bottom-2 flex size-10 items-center justify-center rounded-full',
+            'bg-black/45 text-white backdrop-blur-sm transition-all duration-300 hover:bg-black/65',
+            // No celular nao ha hover: o botao precisa estar sempre visivel, ou
+            // ninguem descobre que da para baixar foto a foto. No desktop ele
+            // aparece ao passar o mouse, deixando a foto limpa.
+            'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100'
+          )}
+        >
+          <Download className="size-4" aria-hidden />
+        </button>
+      )}
     </figure>
   )
 }

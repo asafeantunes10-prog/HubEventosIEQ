@@ -34,38 +34,22 @@
  *   npm run publicar "C:\\Fotos\\..." -- --sem-deploy   (processa e grava, nao publica)
  */
 import sharp from 'sharp'
-import { spawnSync } from 'node:child_process'
-import {
-  readdirSync,
-  mkdirSync,
-  writeFileSync,
-  existsSync,
-  statSync,
-  linkSync,
-  copyFileSync,
-  rmSync,
-} from 'node:fs'
+import { readdirSync, mkdirSync, existsSync, statSync, rmSync } from 'node:fs'
 import { resolve, basename } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 import { aspas, consultar, executar, executarEmLotes } from './d1.mjs'
-
-const RAIZ = resolve(import.meta.dirname, '..')
-
-/** Onde as fotos processadas moram. Fora do git — ver o aviso no `.gitignore`. */
-const PASTA_FOTOS = resolve(RAIZ, 'fotos')
-
-/** O que o `vite build` produz e o que o `pages deploy` envia. */
-const PASTA_DIST = resolve(RAIZ, 'dist')
-
-/**
- * O projeto Pages, e o endereco publico: eventos-ieq.pages.dev.
- *
- * Nao e o mesmo nome do banco D1 (`hub-eventos-ieq`) de proposito: o projeto
- * foi criado com o nome curto, que e o que vai ser divulgado, e renomear um
- * projeto Pages significa perder o endereco. O banco fica como esta.
- */
-const PROJETO_PAGES = 'eventos-ieq'
+import {
+  PASTA_FOTOS,
+  PROJETO_PAGES,
+  LIMITE_ARQUIVOS,
+  ALERTA_ARQUIVOS,
+  contarArquivosDoSite,
+  escreverEspelho,
+  construirSite,
+  projetoPagesExiste,
+  publicarNoPages,
+} from './implantar.mjs'
 
 /** As duas versoes. Os mesmos sufixos que `urlFoto()` monta em `src/lib/fotos.ts`. */
 const VERSOES = [
@@ -95,10 +79,6 @@ const ESFORCO = 6
  * da galeria sem explicacao. Com 12 digitos a chance cai para 1 em 5 milhoes.
  */
 const DIGITOS_ID = 12
-
-/** Teto do plano gratuito, e o numero que decide quando arquivar. */
-const LIMITE_ARQUIVOS = 20_000
-const ALERTA_ARQUIVOS = 18_000
 
 const EXTENSOES = /\.(jpe?g|png|webp|tiff?|avif)$/i
 
@@ -140,40 +120,6 @@ async function gerarLqip(entrada) {
     .webp({ quality: 32, alphaQuality: 40 })
     .toBuffer()
   return `data:image/webp;base64,${buffer.toString('base64')}`
-}
-
-/**
- * Quantos arquivos o site tem, somando todos os eventos.
- *
- * So conta `.webp`: e o que vai para o deploy e o que pesa contra o teto de
- * 20.000. O `fotos.json` de cada evento fica de fora — ele nunca e publicado.
- */
-function contarArquivosDoSite() {
-  if (!existsSync(PASTA_FOTOS)) return 0
-
-  return readdirSync(PASTA_FOTOS, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .reduce(
-      (total, e) =>
-        total + readdirSync(resolve(PASTA_FOTOS, e.name)).filter((n) => n.endsWith('.webp')).length,
-      0
-    )
-}
-
-/**
- * Roda uma ferramenta do projeto com o proprio Node.
- *
- * Chamar `npm` ou `npx` exigiria `shell: true` no Windows (os dois sao `.cmd`),
- * e ai os argumentos passam a ser concatenados em vez de escapados. Apontar
- * direto para o `.js` de cada ferramenta evita o shell inteiro.
- */
-function rodarFerramenta(caminhoRelativo, args, rotulo) {
-  const r = spawnSync(process.execPath, [resolve(RAIZ, caminhoRelativo), ...args], {
-    stdio: 'inherit',
-    cwd: RAIZ,
-  })
-
-  if (r.status !== 0) throw new Error(`${rotulo} falhou (codigo ${r.status}).`)
 }
 
 // ---------------------------------------------------------------- argumentos
@@ -332,36 +278,6 @@ function limparOrfaos(slug, eventoId, destino, opcoes) {
   return apagados
 }
 
-/**
- * Grava um `fotos.json` na pasta do evento, espelhando o que esta no banco.
- *
- * POR QUE UM ESPELHO, SE O D1 E A VERDADE
- * Nem `fotos/` nem o D1 tem backup automatico — a pasta esta fora do git e o
- * banco vive so na Cloudflare. Perder o banco deixaria os WebP no disco sem
- * nenhuma forma de reconstruir a galeria: o nome do arquivo e um identificador
- * sorteado, entao o que liga `8feb55da529f` a `IMG_0001.jpg`, a ordem, as
- * dimensoes e o LQIP existe unicamente no D1.
- *
- * Com o espelho, a pasta do evento passa a ser autossuficiente: quem tiver a
- * copia do HD externo consegue repovoar o banco inteiro. Custa alguns KB por
- * evento e nunca e publicado (o deploy so leva `.webp`).
- */
-function escreverEspelho(eventoId, destino, opcoes) {
-  const fotos = consultar(
-    'select id, caminho, nome_original, largura, altura, lqip, ordem ' +
-      `from fotos where evento_id = ${aspas(eventoId)} order by ordem;`,
-    opcoes
-  )
-
-  const evento = consultar(`select * from eventos where id = ${aspas(eventoId)};`, opcoes)[0]
-
-  writeFileSync(
-    resolve(destino, 'fotos.json'),
-    JSON.stringify({ evento, fotos }, null, 2),
-    'utf8'
-  )
-}
-
 /** `total_fotos` sai de uma contagem real, nunca de um acumulador. */
 function atualizarTotal(eventoId, opcoes) {
   executar(
@@ -415,87 +331,6 @@ async function processarFoto(caminho, slug, ordem, destino) {
     bytesEntrada: statSync(caminho).size,
     bytesSaida: gerados.reduce((s, g) => s + g.bytes, 0),
   }
-}
-
-// ---------------------------------------------------------------- publicacao
-
-/**
- * Copia `fotos/` para dentro de `dist/` por hardlink.
- *
- * POR QUE AS FOTOS NAO MORAM EM `public/`
- * O Vite copia `public/` inteiro a cada build. Com alguns GB de imagem la, todo
- * `npm run dev` e todo build passariam minutos movendo bytes que nao mudaram.
- *
- * POR QUE HARDLINK, E NAO COPIA
- * Um hardlink e um segundo nome para os MESMOS bytes no disco: e instantaneo e
- * nao ocupa espaco nenhum. Copiar 20 eventos a cada publicacao seria mover
- * ~6 GB para produzir uma segunda copia identica que sera apagada no proximo
- * build. Quando o link nao e possivel — `dist/` noutra particao, ou um sistema
- * de arquivos que nao suporta — cai para copia, que funciona igual, so mais
- * devagar.
- *
- * TODOS OS EVENTOS, NAO SO O ATUAL. O `vite build` limpa o `dist/` e o
- * `pages deploy` publica o que estiver la: mandar so o evento novo APAGARIA
- * todas as fotos dos eventos anteriores do site.
- */
-function popularDistComFotos() {
-  if (!existsSync(PASTA_FOTOS)) return { arquivos: 0, copiados: 0 }
-
-  const destinoRaiz = resolve(PASTA_DIST, 'fotos')
-  rmSync(destinoRaiz, { recursive: true, force: true })
-
-  let arquivos = 0
-  let copiados = 0
-
-  for (const entrada of readdirSync(PASTA_FOTOS, { withFileTypes: true })) {
-    if (!entrada.isDirectory()) continue
-
-    const origemPasta = resolve(PASTA_FOTOS, entrada.name)
-    const destinoPasta = resolve(destinoRaiz, entrada.name)
-    mkdirSync(destinoPasta, { recursive: true })
-
-    // So `.webp` atravessa: o `fotos.json` e metadado local, nunca um asset.
-    for (const nome of readdirSync(origemPasta).filter((n) => n.endsWith('.webp'))) {
-      const origem = resolve(origemPasta, nome)
-      const destino = resolve(destinoPasta, nome)
-
-      try {
-        linkSync(origem, destino)
-      } catch {
-        copyFileSync(origem, destino)
-        copiados++
-      }
-      arquivos++
-    }
-  }
-
-  return { arquivos, copiados }
-}
-
-/**
- * O projeto Pages precisa existir antes do primeiro deploy.
- *
- * Perguntar antes e melhor que deixar o `pages deploy` criar sozinho: ele cria
- * com o nome que estiver a mao e sem aviso, e desfazer isso depois significa
- * apagar o projeto e perder o endereco `.pages.dev` que ja foi divulgado.
- */
-function projetoPagesExiste() {
-  const r = spawnSync(
-    process.execPath,
-    [resolve(RAIZ, 'node_modules', 'wrangler', 'bin', 'wrangler.js'), 'pages', 'project', 'list'],
-    { encoding: 'utf8' }
-  )
-
-  if (r.status !== 0) return false
-  return (r.stdout ?? '').includes(PROJETO_PAGES)
-}
-
-function publicarNoPages() {
-  rodarFerramenta(
-    'node_modules/wrangler/bin/wrangler.js',
-    ['pages', 'deploy', 'dist', `--project-name=${PROJETO_PAGES}`],
-    'O deploy'
-  )
 }
 
 // ---------------------------------------------------------------- principal
@@ -623,10 +458,7 @@ async function principal() {
   }
 
   console.log('  Construindo o site...\n')
-  rodarFerramenta('node_modules/typescript/bin/tsc', ['-b'], 'A checagem de tipos')
-  rodarFerramenta('node_modules/vite/bin/vite.js', ['build'], 'O build')
-
-  const { arquivos: linkados, copiados } = popularDistComFotos()
+  const { arquivos: linkados, copiados } = construirSite()
   console.log(
     `\n  ${linkados.toLocaleString('pt-BR')} fotos em dist/fotos/` +
       (copiados > 0 ? ` (${copiados} por copia, ${linkados - copiados} por hardlink)` : ' (por hardlink)')

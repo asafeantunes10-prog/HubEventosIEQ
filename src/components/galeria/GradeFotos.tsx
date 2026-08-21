@@ -5,6 +5,8 @@ import type { Foto, LayoutEvento } from '@/lib/tipos'
 type Props = {
   fotos: Foto[]
   layout: LayoutEvento
+  /** `false` num evento arquivado — a versao -g nao existe mais, entao nao ha o que baixar. */
+  temVersaoGrande: boolean
   aoAbrir: (indice: number) => void
   aoBaixar: (foto: Foto, indice: number) => void
 }
@@ -32,7 +34,7 @@ type Props = {
  * fotos do mesmo tamanho. Serve para eventos de fotos muito parecidas, onde o
  * mosaico so parece bagunca.
  */
-export function GradeFotos({ fotos, layout, aoAbrir, aoBaixar }: Props) {
+export function GradeFotos({ fotos, layout, temVersaoGrande, aoAbrir, aoBaixar }: Props) {
   if (fotos.length === 0) {
     return (
       <p className="py-20 text-center text-sm text-muted-foreground">
@@ -54,6 +56,7 @@ export function GradeFotos({ fotos, layout, aoAbrir, aoBaixar }: Props) {
           key={foto.id}
           foto={foto}
           indice={indice}
+          temVersaoGrande={temVersaoGrande}
           aoAbrir={aoAbrir}
           aoBaixar={aoBaixar}
         />

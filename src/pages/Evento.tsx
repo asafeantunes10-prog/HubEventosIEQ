@@ -66,7 +66,12 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
   }, [slug])
 
   const aoBaixarFoto = React.useCallback(
-    async (foto: Foto, indice: number, slugEvento: string) => {
+    async (foto: Foto, indice: number, slugEvento: string, temVersaoGrande: boolean) => {
+      // Defesa a mais: com o evento arquivado a `-g.webp` nao existe mais no
+      // site, e nenhum botao desta tela deveria chamar isto — mas um botao
+      // escondido errado no futuro nao pode virar um download quebrado.
+      if (!temVersaoGrande) return
+
       try {
         await baixarUma(urlFoto(foto.caminho, 'g'), nomeParaDownload(slugEvento, indice, foto.nomeOriginal))
       } catch (e) {
@@ -120,6 +125,14 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
 
   const { evento, fotos } = estado.dados
 
+  /*
+    `arquivado` apaga so a versao -g (2048px) no disco — ver `scripts/arquivar.mjs`.
+    A partir daqui, tudo que pediria essa versao (ZIP, download avulso, a foto
+    grande do visualizador) precisa saber disso, ou o resultado e um download
+    quebrado ou uma imagem quebrada em tela cheia, nao so um botao a menos.
+  */
+  const temVersaoGrande = !evento.arquivado
+
   return (
     <main
       className="lados-seguros topo-seguro mx-auto w-full max-w-6xl py-10 sm:py-14"
@@ -150,7 +163,7 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
           <p className="mt-4 leading-relaxed text-muted-foreground">{evento.descricao}</p>
         )}
 
-        {evento.permiteZip && (
+        {evento.permiteZip && temVersaoGrande && (
           <div className="mt-5">
             <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
           </div>
@@ -161,8 +174,9 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
         <GradeFotos
           fotos={fotos}
           layout={evento.layout}
+          temVersaoGrande={temVersaoGrande}
           aoAbrir={setIndiceAberto}
-          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug)}
+          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
         />
       </div>
 
@@ -170,9 +184,10 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
         <Visualizador
           fotos={fotos}
           indice={indiceAberto}
+          temVersaoGrande={temVersaoGrande}
           aoFechar={() => setIndiceAberto(null)}
           aoNavegar={setIndiceAberto}
-          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug)}
+          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
         />
       )}
     </main>

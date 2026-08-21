@@ -1,0 +1,6 @@
+# O painel admin nao tem nada que valha aparecer numa busca, e a senha ja o
+# protege — isto aqui e so para nao ver "Painel administrativo" indexado ao
+# lado das fotos dos eventos.
+User-agent: *
+Disallow: /admin
+Disallow: /api/admin

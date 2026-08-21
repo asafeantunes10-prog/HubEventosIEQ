@@ -108,13 +108,92 @@ API da Cloudflare, não escopo de token (`d1 (write)` aparece em `wrangler whoam
 Registrando caso se repita: se `npm run publicar` falhar com `7403`, rode de novo antes de
 suspeitar de outra coisa.
 
-**Próxima: etapa 6 — compartilhamento e acabamento.** Meta tags OG por evento via
-HTMLRewriter, `robots.txt`, página 404 de verdade (ver o item abaixo) e o README.
+**Etapa 6 (Compartilhamento e acabamento) — concluída.** Meta tags OG de verdade, 404 real
+(página E status HTTP), `robots.txt`, o script de arquivamento e o README.
 
-**Conhecido e adiado para a etapa 6:** uma rota que não bate com nenhuma rota declarada
-(`/`, `/e/:slug`, `/admin`, `/admin/eventos/novo`, `/admin/eventos/:id`) cai no fallback de
-SPA do Pages (recebe o `index.html`, status 200) e o React Router não renderiza nada —
-tela em branco. A página 404 de verdade está na lista da etapa 6.
+- `functions/_middleware.ts` (novo — o primeiro middleware fora de `admin/`, na raiz do
+  site) roda para todo caminho que não seja `/api/*` e faz duas coisas:
+  - Em `/e/:slug`, reescreve `<title>`, `og:title`, `og:description` e
+    `meta[name=description]` via HTMLRewriter, e ACRESCENTA `og:url`, `og:image` e
+    `twitter:image` (o `index.html` estático nunca teve tag de imagem — não havia o que
+    substituir, só acrescentar). A imagem vem de `urlFoto()` — o mesmo `src/lib/fotos.ts`
+    que as telas usam, importado direto de dentro de `functions/` atravessando os dois
+    `tsconfig` — com origem absoluta (`new URL(..., url.origin)`), porque OG exige URL
+    completa. `npm run tipos:functions` confirma que essa importação atravessando a
+    fronteira tipa limpo.
+  - Em QUALQUER caminho que não bate com nenhuma rota conhecida (a mesma lista que
+    `src/App.tsx` declara — as duas precisam concordar), troca o status da resposta para
+    404 de verdade, mantendo o mesmo corpo. Resolve o bug já registrado aqui: antes, todo
+    caminho inválido caía no fallback de SPA do Pages com status 200 e o React Router não
+    renderizava nada — tela em branco. Agora existe uma rota coringa
+    (`src/pages/NaoEncontrada.tsx`, `path="*"` em `App.tsx`) que aparece nos dois casos
+    (rota que não existe, ou `/e/:slug` de um evento que não existe/não está publicado), e
+    o cabeçalho HTTP conta a mesma história para quem não é humano (bot, ferramenta de
+    prévia de link).
+  - `/fotos/*` continua fora disto: o Pages exclui pasta de asset estático do roteamento
+    de Functions antes de consultar qualquer coisa, então nenhuma foto passa por aqui —
+    confirmado batendo direto num arquivo apagado (404 de verdade, sem o middleware).
+
+- **Achado no meio do caminho, fora do que o plano pedia:** `arquivado` (a flag que
+  `arquivar.mjs` liga) só mexia no banco — nenhuma tela sabia disso. Como o visualizador e
+  o ZIP sempre pediam a versão `-g`, um evento arquivado mostraria IMAGEM QUEBRADA em tela
+  cheia, não só um download que falha. Corrigido: `Evento.tsx` calcula
+  `temVersaoGrande = !evento.arquivado` e repassa para `GradeFotos` → `CartaoFoto`
+  (esconde o botão de baixar a foto avulsa), `Visualizador` (esconde o botão de baixar E
+  troca a imagem principal para a versão `-t`, a única que sobra) e esconde `BaixarTudo`
+  inteiro. O `og:image` do middleware faz o mesmo: usa `-t` quando `arquivado`, para o
+  link continuar tendo prévia em vez de imagem quebrada.
+
+- `scripts/arquivar.mjs` (novo): apaga as versões `-g` de um evento e marca
+  `arquivado = 1`. **Simulação por padrão** — sem `--confirmar` só mostra quantas fotos e
+  quantos MB seriam apagados; nada muda no disco nem no banco. Com `--confirmar`, apaga,
+  atualiza o banco, reescreve o `fotos.json` (espelho) e publica de novo — os mesmos três
+  passos finais de `publicar.mjs`. Isso puxou um refactor: a cauda que os dois scripts
+  compartilham (`popularDistComFotos`, `projetoPagesExiste`, `publicarNoPages`,
+  `escreverEspelho`, `contarArquivosDoSite`, as constantes de caminho) saiu de
+  `publicar.mjs` para `scripts/implantar.mjs`. Nenhuma lógica mudou, só o lugar —
+  `publicar.mjs` ficou mais curto e importa de lá.
+
+- `public/robots.txt` (novo): bloqueia `/admin` e `/api/admin`. Nada lá que valha aparecer
+  numa busca, e a senha já protege de verdade — isto é só para não ver "Painel
+  administrativo" indexado ao lado das fotos dos eventos.
+
+- `README.md` (novo, na raiz): como publicar um evento, como arquivar, como trocar a
+  senha, o aviso sobre o backup de `fotos/`, os comandos e o passo de
+  `npm approve-scripts` numa máquina nova. Este arquivo continua sendo o histórico
+  técnico; o README é para quem só quer usar o site pronto.
+
+- **Deliberadamente fora desta etapa:** `manifest.webmanifest`. Exigiria ícones (192px,
+  512px) que ainda não existem — o projeto não tem identidade visual própria ainda (fica
+  para depois, com o tema do molde por enquanto). Um manifesto sem ícone de verdade seria
+  só um arquivo a mais sem efeito prático.
+
+**Testado com dados sintéticos no D1 LOCAL** (um evento e duas fotos falsas, nunca tocou
+produção) via `wrangler pages dev`: rotas conhecidas em 200, rota inválida em 404, `/e/:slug`
+de evento inexistente em 404 com corpo intacto, tags OG corretas. Depois de arquivar de
+verdade (`--local --confirmar`): arquivos `-g` sumiram do disco, `-t` sobreviveram, banco
+com `arquivado=1`, espelho reescrito, e a mesma página passou a usar `-t` no `og:image`.
+Dados de teste apagados do banco local e do disco em seguida.
+
+**Depois, contra o site publicado** (sem tocar fotos nem D1 de produção — só `tsc -b`,
+`vite build` e `wrangler pages deploy dist`, reaproveitando o `culto-de-teste-2026` já no
+ar): `/`, `/admin` e `/admin/eventos/:id` em 200; caminho inválido em 404; o evento real com
+as três tags OG certas e a imagem respondendo 200 de verdade; um slug inexistente em 404 com
+o corpo do SPA intacto; `robots.txt` servindo; `/api/eventos` e `/api/admin/sessao`
+inalterados (o middleware novo não entra no caminho de `/api/*`).
+
+Mais um soluço passageiro do mesmo tipo já registrado duas vezes acima (`7403`, `405`): logo
+após o deploy, uma rota inválida respondeu 200 (o comportamento ANTIGO) numa única
+tentativa; a mesma rota, e outras novas, responderam 404 correto segundos depois —
+propagação do deploy pelos PoPs da Cloudflare, não um bug de lógica.
+
+**O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
+existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de
+arquivos no painel do Pages; abrir o link no celular em rede móvel (não Wi-Fi); baixar uma
+foto e o ZIP completo no celular; colar o link de um evento no Instagram e no WhatsApp e
+ver a prévia **de verdade** (o servidor já entrega a tag certa e a imagem responde 200 —
+falta só alguém com WhatsApp/Instagram confirmar o resultado); criar/editar um evento pelo
+painel a partir do celular.
 
 ### Pendência pequena, herdada da etapa 1
 

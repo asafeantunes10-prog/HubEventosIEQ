@@ -7,6 +7,14 @@ import type { Foto } from '@/lib/tipos'
 type Props = {
   fotos: Foto[]
   indice: number
+  /**
+   * `false` num evento arquivado — a versao -g (2048px) foi apagada do disco
+   * (ver `scripts/arquivar.mjs`) para liberar arquivos do teto do plano
+   * gratuito. Sem isto, a foto em tela cheia viria quebrada: a versao -t
+   * (400px) que sobrou vira o melhor tamanho disponivel, e o botao de baixar
+   * some, porque o arquivo que ele baixaria nao existe mais.
+   */
+  temVersaoGrande: boolean
   aoFechar: () => void
   aoNavegar: (indice: number) => void
   aoBaixar: (foto: Foto, indice: number) => void
@@ -29,9 +37,13 @@ const LIMIAR_ARRASTO = 50
  * Nao existe um tamanho intermediario de proposito: cada tamanho a mais custa
  * 500 arquivos por evento, e o limite do plano gratuito e contagem de arquivos,
  * nao banda. O LQIP e a miniatura ja no cache da grade cobrem a espera.
+ *
+ * Excecao: evento arquivado (`temVersaoGrande=false`) cai para a versao -t, a
+ * unica que ainda existe no disco.
  */
-export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: Props) {
+export function Visualizador({ fotos, indice, temVersaoGrande, aoFechar, aoNavegar, aoBaixar }: Props) {
   const foto = fotos[indice]
+  const tamanho = temVersaoGrande ? 'g' : 't'
   const containerRef = React.useRef<HTMLDivElement>(null)
   const inicioToque = React.useRef<{ x: number; y: number } | null>(null)
 
@@ -87,10 +99,10 @@ export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: P
       const alvo = fotos[vizinho]
       if (alvo) {
         const img = new Image()
-        img.src = urlFoto(alvo.caminho, 'g')
+        img.src = urlFoto(alvo.caminho, tamanho)
       }
     }
-  }, [indice, fotos])
+  }, [indice, fotos, tamanho])
 
   if (!foto) return null
 
@@ -128,14 +140,16 @@ export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: P
         </span>
 
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => aoBaixar(foto, indice)}
-            aria-label="Baixar esta foto"
-            className="flex size-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-          >
-            <Download className="size-5" aria-hidden />
-          </button>
+          {temVersaoGrande && (
+            <button
+              type="button"
+              onClick={() => aoBaixar(foto, indice)}
+              aria-label="Baixar esta foto"
+              className="flex size-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+            >
+              <Download className="size-5" aria-hidden />
+            </button>
+          )}
 
           <button
             type="button"
@@ -157,7 +171,7 @@ export function Visualizador({ fotos, indice, aoFechar, aoNavegar, aoBaixar }: P
       >
         <img
           key={foto.id}
-          src={urlFoto(foto.caminho, 'g')}
+          src={urlFoto(foto.caminho, tamanho)}
           alt={`Foto ${indice + 1}`}
           onClick={(e) => e.stopPropagation()}
           className="max-h-full max-w-full object-contain select-none"

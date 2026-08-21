@@ -92,6 +92,13 @@ segurança. O Access, uma vez configurado, também passa a barrar a própria pá
 and-drop é ruim no toque de celular, e é de celular que o plano pede para o painel
 funcionar.
 
+O deploy desta etapa teve um erro `7403` isolado do D1 remoto ("account not authorized")
+numa primeira tentativa; a segunda, imediatamente depois, passou sem mudar nada — e uma
+consulta direta (`wrangler d1 execute --remote`) também funcionou no meio das duas. Parece
+um soluço passageiro da API da Cloudflare, não um problema de escopo do token (`d1 (write)`
+aparece em `wrangler whoami`) nem do código. Registrando caso se repita: se
+`npm run publicar` falhar com `7403`, rodar de novo antes de suspeitar de outra coisa.
+
 **Próxima: etapa 6 — compartilhamento e acabamento.** Meta tags OG por evento via
 HTMLRewriter, `robots.txt`, página 404 de verdade (ver o item abaixo) e o README.
 

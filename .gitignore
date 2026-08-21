@@ -30,7 +30,13 @@ dist-ssr
 # moram nesta maquina e sao publicadas daqui; se a pasta se perder, nao ha de
 # onde republicar. Guarde uma copia num HD externo ou no Drive — isso e
 # obrigacao do projeto, nao zelo excessivo. Ver o README.
-fotos
+#
+# A BARRA NO INICIO IMPORTA. Sem ela, "fotos" casava com QUALQUER pasta
+# chamada fotos em qualquer profundidade — inclusive uma rota de API como
+# functions/api/admin/eventos/[id]/fotos/, que nao tem nada a ver com a pasta
+# de imagens. Foi assim que o arquivo de `[fotoId].ts` sumiu do `git status`
+# sem aviso nenhum ao ser criado. Com `/fotos`, so a pasta na raiz conta.
+/fotos
 
 # Estado local do wrangler (banco D1 de desenvolvimento, cache).
 .wrangler

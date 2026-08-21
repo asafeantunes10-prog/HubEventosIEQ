@@ -4,6 +4,7 @@ import { Camera, Loader2, TriangleAlert } from 'lucide-react'
 import { CartaoEvento } from '@/components/CartaoEvento'
 import { listarEventos } from '@/lib/api'
 import type { EventoComCapa } from '@/lib/tipos'
+import seloQuadrangular from '@/assets/marca/quadrangular-ms.png'
 
 type Estado =
   | { tipo: 'carregando' }
@@ -44,52 +45,63 @@ export function Home() {
   }, [])
 
   return (
-    <main className="lados-seguros topo-seguro mx-auto w-full max-w-5xl py-16 sm:py-20">
-      <header className="max-w-prose">
-        <span className="rotulo-seccao">Igreja do Evangelho Quadrangular</span>
+    // O fundo da identidade cobre a tela inteira; o `<main>` continua so o
+    // dono do respiro e da largura maxima, como antes.
+    <div className="fundo-identidade min-h-svh">
+      <main className="lados-seguros topo-seguro mx-auto w-full max-w-5xl py-16 sm:py-20">
+        <header className="max-w-prose">
+          <span className="flex items-center gap-2.5">
+            <img
+              src={seloQuadrangular}
+              alt=""
+              className="size-6 rounded-full ring-1 ring-champanhe-claro/40"
+            />
+            <span className="rotulo-seccao">Igreja do Evangelho Quadrangular</span>
+          </span>
 
-        <h1 className="titulo-metal font-heading mt-4 text-4xl tracking-tight sm:text-6xl">
-          Fotos dos eventos
-        </h1>
+          <h1 className="titulo-metal font-heading mt-4 text-4xl tracking-tight sm:text-6xl">
+            Fotos dos eventos
+          </h1>
 
-        <p className="mt-6 leading-relaxed text-muted-foreground">
-          As fotos de cada evento da igreja, reunidas num lugar só. Sem conta, sem pedido de
-          permissão, sem link que expira: é só abrir, ver e baixar o que você quiser.
-        </p>
-      </header>
+          <p className="mt-6 leading-relaxed text-muted-foreground">
+            As fotos de cada evento da igreja, reunidas num lugar só. Sem conta, sem pedido de
+            permissão, sem link que expira: é só abrir, ver e baixar o que você quiser.
+          </p>
+        </header>
 
-      <section className="mt-14">
-        {estado.tipo === 'carregando' && (
-          <div className="flex items-center gap-3 py-12 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-            Carregando os eventos…
-          </div>
-        )}
+        <section className="mt-14">
+          {estado.tipo === 'carregando' && (
+            <div className="flex items-center gap-3 py-12 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              Carregando os eventos…
+            </div>
+          )}
 
-        {estado.tipo === 'erro' && (
-          <div className="flex items-start gap-3 rounded-xl bg-destructive/10 p-5 text-sm text-destructive">
-            <TriangleAlert className="size-5 shrink-0" aria-hidden />
-            {estado.mensagem}
-          </div>
-        )}
+          {estado.tipo === 'erro' && (
+            <div className="flex items-start gap-3 rounded-xl bg-destructive/10 p-5 text-sm text-destructive">
+              <TriangleAlert className="size-5 shrink-0" aria-hidden />
+              {estado.mensagem}
+            </div>
+          )}
 
-        {estado.tipo === 'pronto' && estado.eventos.length === 0 && (
-          <div className="superficie brilho-tema flex items-center gap-4 rounded-xl p-5">
-            <Camera className="size-5 shrink-0 text-primary" aria-hidden />
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Nenhum evento publicado ainda. Volte em breve.
-            </p>
-          </div>
-        )}
+          {estado.tipo === 'pronto' && estado.eventos.length === 0 && (
+            <div className="superficie brilho-tema flex items-center gap-4 rounded-xl p-5">
+              <Camera className="size-5 shrink-0 text-primary" aria-hidden />
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Nenhum evento publicado ainda. Volte em breve.
+              </p>
+            </div>
+          )}
 
-        {estado.tipo === 'pronto' && estado.eventos.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {estado.eventos.map((evento) => (
-              <CartaoEvento key={evento.id} evento={evento} />
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+          {estado.tipo === 'pronto' && estado.eventos.length > 0 && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {estado.eventos.map((evento) => (
+                <CartaoEvento key={evento.id} evento={evento} />
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
   )
 }

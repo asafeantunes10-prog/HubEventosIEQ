@@ -187,6 +187,50 @@ após o deploy, uma rota inválida respondeu 200 (o comportamento ANTIGO) numa �
 tentativa; a mesma rota, e outras novas, responderam 404 correto segundos depois —
 propagação do deploy pelos PoPs da Cloudflare, não um bug de lógica.
 
+### Extensões pós-etapa 6 (fora do plano original, pedidas depois)
+
+**Apagar foto avulsa.** `DELETE /api/admin/eventos/:id/fotos/:fotoId`
+(`functions/api/admin/eventos/[id]/fotos/[fotoId].ts`) apaga a linha da foto, tira ela da
+capa se era a escolhida, e recalcula `total_fotos` — os três num `batch` só. Mesma ressalva
+do apagar evento (etapa 5): **não apaga o arquivo do disco nem do site publicado**, só o
+registro no D1 — o `.webp` fica órfão até o próximo `npm run publicar` (de qualquer evento)
+rodar `limparOrfaos()`. Existe para corrigir engano (foto errada que entrou junto num lote),
+não para curadoria. Na tela (`GerenciarFotos.tsx`, dentro de `EditarEvento.tsx`), um ícone de
+lixeira por miniatura, confirmação por `window.confirm` (não um `Dialog` — com centenas de
+fotos na grade, um por miniatura seria pesado para um clique que precisa ser rápido).
+
+**Identidade visual chegou.** As primeiras peças (brasão do Diaconato, selo da Quadrangular
+MS, logo do Grupo Missionário de Homens) vieram do Asafe e substituem o placeholder que
+`index.css` descrevia como provisório. Decisão, depois de três rodadas de prévia num
+Artifact: continua **tema único, escuro** (a regra original se mantém — só a cor mudou), mas
+agora com identidade de verdade:
+- `.fundo-identidade` (novo, em `index.css`): o fundo da home — os quatro tons tirados do
+  brasão do Diaconato (vermelho, dourado, azul, roxo) em brilhos suaves nos quatro cantos,
+  sobre uma base bem escura. Aplicado num `<div>` que envolve o `<main>` da `Home.tsx`, para
+  cobrir a tela inteira (o `<main>` sozinho é centralizado e não tem a largura da viewport).
+- Selo pequeno da Quadrangular MS no cabeçalho da home, ao lado do texto "Igreja do Evangelho
+  Quadrangular" — depois de uma tentativa maior (um "vitral" cônico nas quatro cores) não
+  agradar, ficou provado que discreto funciona melhor aqui.
+- `.fundo-evento` (novo): mesma lógica na página de um evento, mas com UM glow dominante
+  controlado por `var(--primary)` — a MESMA variável que `cor_destaque` já sobrescrevia no
+  wrapper de `Evento.tsx` desde a etapa 3. Não precisou mexer no schema nem no painel: quem
+  já sabia usar `cor_destaque` já está usando o fundo novo. Um segundo glow fixo (vermelho
+  fechado do brasão) dá o fio de identidade que se repete em todo evento.
+- Os três arquivos originais (PNG/JPEG) estão em `src/assets/marca/` — só a Quadrangular MS
+  está com uso real hoje (o selo do cabeçalho). GMH4 e o brasão do Diaconato foram
+  incorporados ao repositório mas ainda NÃO aparecem em tela nenhuma: um banner combinando
+  os dois, específico da página do evento "Diaconato", pede ou um schema novo (logos por
+  evento não existem como coluna) ou um atalho grudado no slug — nenhum dos dois foi feito
+  ainda, por decisão de escopo (ver conversa, não neste arquivo).
+
+**Testado:** `npm run build`, `npm run tipos:functions` e `npm run lint` limpos; o CSS de
+produção (`dist/assets/index-*.css`) confirmado com as classes novas depois do build; `npm
+run dev` local respondeu 200 na home. **NÃO testado:** clique real no botão de apagar foto
+contra o painel publicado, nem a home/evento nova num navegador de verdade (sem Chrome
+disponível nesta sessão) — vale conferir visualmente antes de divulgar. **NÃO comitado, NÃO
+publicado em produção** — o `git status` segue limpo do commit `6af726d` até alguém decidir
+publicar isto.
+
 **O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
 existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de
 arquivos no painel do Pages; abrir o link no celular em rede móvel (não Wi-Fi); baixar uma

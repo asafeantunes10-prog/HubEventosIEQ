@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ChevronDown, ChevronUp, ImageOff, Star } from 'lucide-react'
+import { ChevronDown, ChevronUp, ImageOff, Star, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,7 @@ type Props = {
   capaId: string | null
   aoMoverFoto: (indice: number, direcao: -1 | 1) => void
   aoDefinirCapa: (fotoId: string) => void
+  aoApagarFoto: (fotoId: string) => void
 }
 
 /**
@@ -24,7 +25,7 @@ type Props = {
  * plano pede para o painel funcionar — e os botoes chegam ao mesmo resultado
  * sem precisar de uma biblioteca de gestos.
  */
-export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa }: Props) {
+export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa, aoApagarFoto }: Props) {
   if (fotos.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -66,14 +67,26 @@ export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa }: Pr
 
             <Button
               type="button"
-              size="xs"
-              variant={foto.id === capaId ? 'secondary' : 'ghost'}
-              onClick={() => aoDefinirCapa(foto.id)}
-              disabled={foto.id === capaId}
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => aoApagarFoto(foto.id)}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={`Apagar foto ${indice + 1}`}
             >
-              {foto.id === capaId ? 'É a capa' : 'Definir capa'}
+              <Trash2 className="size-3.5" aria-hidden />
             </Button>
           </div>
+
+          <Button
+            type="button"
+            size="xs"
+            variant={foto.id === capaId ? 'secondary' : 'ghost'}
+            onClick={() => aoDefinirCapa(foto.id)}
+            disabled={foto.id === capaId}
+            className="w-full"
+          >
+            {foto.id === capaId ? 'É a capa' : 'Definir capa'}
+          </Button>
         </li>
       ))}
     </ul>

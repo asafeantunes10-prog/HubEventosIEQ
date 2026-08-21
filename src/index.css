@@ -174,6 +174,19 @@
     --seguro-base: env(safe-area-inset-bottom, 0px);
     --seguro-esq: env(safe-area-inset-left, 0px);
     --seguro-dir: env(safe-area-inset-right, 0px);
+
+    /*
+      A IDENTIDADE CHEGOU. Cores tiradas do proprio brasao do Diaconato (a
+      primeira peca de identidade que a igreja mandou) — vermelho, dourado,
+      azul e roxo. So usadas em fundo (glow decorativo atras do conteudo),
+      nunca em texto: `--tema-*` acima continua governando contraste de letra,
+      ja calibrado.
+    */
+    --marca-vermelho: #e0393c;
+    --marca-vermelho-fechado: #57141a;
+    --marca-dourado: #eaa61f;
+    --marca-azul: #2f74d6;
+    --marca-roxo: #9a3fc4;
 }
 
 @media (min-width: 768px) {
@@ -452,6 +465,39 @@
   .brilho-tema {
     box-shadow: 0 0 0 1px color-mix(in oklab, var(--tema-champanhe) 30%, transparent),
       0 0 42px -12px color-mix(in oklab, var(--tema-champanhe) 60%, transparent);
+    }
+
+  /*
+    Fundo da home: os quatro tons da marca em brilhos suaves nos quatro
+    cantos, sobre uma base bem escura — nao um degrade decorativo generico,
+    e a mistura das cores do brasao. Fixo (sem parallax nem foto): o `body` ja
+    tem o halo neutro por baixo de tudo, este e so um bloco a mais atras do
+    conteudo da home, delimitado ao wrapper que a usa.
+  */
+  .fundo-identidade {
+    background:
+      radial-gradient(95% 65% at 6% -8%, color-mix(in oklab, var(--marca-vermelho) 62%, transparent), transparent 62%),
+      radial-gradient(85% 60% at 102% 4%, color-mix(in oklab, var(--marca-dourado) 50%, transparent), transparent 64%),
+      radial-gradient(100% 70% at 94% 112%, color-mix(in oklab, var(--marca-roxo) 58%, transparent), transparent 62%),
+      radial-gradient(85% 65% at 0% 104%, color-mix(in oklab, var(--marca-azul) 56%, transparent), transparent 62%),
+      linear-gradient(180deg, #120f1a 0%, #0c0a12 55%, #08070c 100%);
+    }
+
+  /*
+    Fundo de uma pagina de evento: o mesmo espirito do `.fundo-identidade`,
+    so que com UM glow dominante controlado por evento — `var(--primary)`, a
+    MESMA variavel que `cor_destaque` ja sobrescreve no wrapper de
+    `Evento.tsx` (ver o comentario la). Sem `cor_destaque`, cai no tom neutro
+    padrao do tema (`--primary` = champanhe) — um brilho discreto, nao
+    colorido, em vez de quebrar para uma cor arbitraria.
+    Um segundo glow FIXO (o vermelho fechado do brasao) da o fio de identidade
+    que se repete em todo evento, qualquer que seja a cor escolhida.
+  */
+  .fundo-evento {
+    background:
+      radial-gradient(115% 70% at 88% -10%, color-mix(in oklab, var(--primary) 60%, transparent), transparent 55%),
+      radial-gradient(80% 55% at 4% 112%, color-mix(in oklab, var(--marca-vermelho-fechado) 45%, transparent), transparent 60%),
+      linear-gradient(170deg, #101a2c 0%, #0c1420 45%, #080c14 100%);
     }
 
 }

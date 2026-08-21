@@ -121,3 +121,16 @@ export async function reordenarFotos(eventoId: string, ordemIds: string[]): Prom
     body: JSON.stringify({ ordem: ordemIds }),
   })
 }
+
+/**
+ * Apaga o REGISTRO de uma foto (nao o arquivo — ver o comentario completo em
+ * `functions/api/admin/eventos/[id]/fotos/[fotoId].ts`). A tela que chama isto
+ * precisa avisar sobre essa diferenca antes de confirmar, mesma regra do
+ * `apagarEvento` acima.
+ */
+export async function apagarFoto(eventoId: string, fotoId: string): Promise<void> {
+  await chamarApi<void>(
+    `/api/admin/eventos/${encodeURIComponent(eventoId)}/fotos/${encodeURIComponent(fotoId)}`,
+    { method: 'DELETE' }
+  )
+}

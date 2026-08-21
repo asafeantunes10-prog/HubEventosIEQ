@@ -134,62 +134,66 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
   const temVersaoGrande = !evento.arquivado
 
   return (
-    <main
-      className="lados-seguros topo-seguro mx-auto w-full max-w-6xl py-10 sm:py-14"
-      // A personalizacao por evento: `cor_destaque` sobrescreve `--primary` so
-      // dentro deste wrapper. O design system inteiro e baseado em variaveis
-      // CSS, entao isto e uma linha de `style`, nao um tema paralelo.
+    <div
+      className="fundo-evento min-h-svh"
+      // A personalizacao por evento: `cor_destaque` sobrescreve `--primary`
+      // aqui no wrapper mais externo — dai ele chega tanto nos botoes/acentos
+      // de sempre quanto no glow dominante de `.fundo-evento` (index.css), sem
+      // duplicar a config. O design system inteiro e baseado em variaveis CSS,
+      // entao isto e uma linha de `style`, nao um tema paralelo.
       style={evento.corDestaque ? ({ '--primary': evento.corDestaque } as React.CSSProperties) : undefined}
     >
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ChevronLeft className="size-4" aria-hidden />
-        Todos os eventos
-      </Link>
+      <main className="lados-seguros topo-seguro mx-auto w-full max-w-6xl py-10 sm:py-14">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronLeft className="size-4" aria-hidden />
+          Todos os eventos
+        </Link>
 
-      <header className="mt-6 max-w-prose">
-        <h1 className="font-heading text-3xl tracking-tight text-champanhe-claro sm:text-5xl">
-          {evento.titulo}
-        </h1>
+        <header className="mt-6 max-w-prose">
+          <h1 className="font-heading text-3xl tracking-tight text-champanhe-claro sm:text-5xl">
+            {evento.titulo}
+          </h1>
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          {evento.dataEvento && `${formatarData(evento.dataEvento)} · `}
-          {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
-        </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {evento.dataEvento && `${formatarData(evento.dataEvento)} · `}
+            {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
+          </p>
 
-        {evento.descricao && (
-          <p className="mt-4 leading-relaxed text-muted-foreground">{evento.descricao}</p>
+          {evento.descricao && (
+            <p className="mt-4 leading-relaxed text-muted-foreground">{evento.descricao}</p>
+          )}
+
+          {evento.permiteZip && temVersaoGrande && (
+            <div className="mt-5">
+              <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
+            </div>
+          )}
+        </header>
+
+        <div className="mt-10">
+          <GradeFotos
+            fotos={fotos}
+            layout={evento.layout}
+            temVersaoGrande={temVersaoGrande}
+            aoAbrir={setIndiceAberto}
+            aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
+          />
+        </div>
+
+        {indiceAberto !== null && (
+          <Visualizador
+            fotos={fotos}
+            indice={indiceAberto}
+            temVersaoGrande={temVersaoGrande}
+            aoFechar={() => setIndiceAberto(null)}
+            aoNavegar={setIndiceAberto}
+            aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
+          />
         )}
-
-        {evento.permiteZip && temVersaoGrande && (
-          <div className="mt-5">
-            <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
-          </div>
-        )}
-      </header>
-
-      <div className="mt-10">
-        <GradeFotos
-          fotos={fotos}
-          layout={evento.layout}
-          temVersaoGrande={temVersaoGrande}
-          aoAbrir={setIndiceAberto}
-          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
-        />
-      </div>
-
-      {indiceAberto !== null && (
-        <Visualizador
-          fotos={fotos}
-          indice={indiceAberto}
-          temVersaoGrande={temVersaoGrande}
-          aoFechar={() => setIndiceAberto(null)}
-          aoNavegar={setIndiceAberto}
-          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
-        />
-      )}
-    </main>
+      </main>
+    </div>
   )
 }

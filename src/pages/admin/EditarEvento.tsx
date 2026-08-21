@@ -8,7 +8,7 @@ import { CamposEvento, type ValoresCamposEvento } from '@/components/admin/Campo
 import { GerenciarFotos } from '@/components/admin/GerenciarFotos'
 import { DialogApagarEvento } from '@/components/admin/DialogApagarEvento'
 import { ErroApi } from '@/lib/api'
-import { apagarEvento, atualizarEvento, buscarEventoAdmin, reordenarFotos } from '@/lib/apiAdmin'
+import { apagarEvento, apagarFoto, atualizarEvento, buscarEventoAdmin, reordenarFotos } from '@/lib/apiAdmin'
 import type { Evento, Foto } from '@/lib/tipos'
 
 type EstadoCarga =
@@ -165,6 +165,33 @@ function PaginaEditar({ id }: { id: string | undefined }) {
     }
   }
 
+  const aoApagarFoto = async (fotoId: string) => {
+    if (!evento) return
+
+    // Confirmar aqui, nao num Dialog por foto — com uma grade de centenas de
+    // fotos, um `<Dialog>` por miniatura e peso de mais para um clique que
+    // precisa ser rapido (e o cenario real: tirar uma foto errada do meio de
+    // um lote que acabou de subir).
+    const confirmou = window.confirm(
+      'Apagar esta foto? Ela some da galeria agora, mas o arquivo continua no ' +
+        'disco e no site publicado ate o proximo "npm run publicar" limpar os orfaos.'
+    )
+    if (!confirmou) return
+
+    const anteriores = fotos
+    setFotos((atual) => atual.filter((f) => f.id !== fotoId)) // otimista
+
+    try {
+      await apagarFoto(evento.id, fotoId)
+      if (evento.capaId === fotoId) {
+        setEvento((atual) => (atual ? { ...atual, capaId: null } : atual))
+      }
+    } catch (e) {
+      setFotos(anteriores)
+      window.alert(e instanceof Error ? e.message : 'Não consegui apagar a foto.')
+    }
+  }
+
   const aoApagar = async () => {
     if (!evento) return
     try {
@@ -313,7 +340,8 @@ function PaginaEditar({ id }: { id: string | undefined }) {
           Fotos <span className="text-base font-normal text-muted-foreground">({fotos.length})</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Reordene com as setas e clique em "Definir capa" na foto que deve aparecer na home.
+          Reordene com as setas, clique em "Definir capa" na foto que deve aparecer na home, ou
+          no ícone de lixeira para apagar uma foto que entrou por engano.
         </p>
         <div className="mt-4">
           <GerenciarFotos
@@ -321,6 +349,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
             capaId={evento.capaId}
             aoMoverFoto={(indice, direcao) => void aoMoverFoto(indice, direcao)}
             aoDefinirCapa={(fotoId) => void aoDefinirCapa(fotoId)}
+            aoApagarFoto={(fotoId) => void aoApagarFoto(fotoId)}
           />
         </div>
       </section>

@@ -81,14 +81,22 @@ motivo que já tinha tirado o R2. No lugar: **uma senha única**, sem conta por 
 - `scripts/gerar-senha.mjs` gera os dois secrets. Já rodei uma vez: os secrets estão
   configurados em produção (`wrangler pages secret put`), e a senha foi mostrada ao Asafe
   uma única vez para ele guardar num gerenciador de senhas — **ninguém mais tem acesso a
-  ela**, nem este arquivo. Trocar a senha no futuro é rodar o script nomo com o novo valor.
+  ela**, nem este arquivo. Trocar a senha no futuro é rodar o script de novo com o novo
+  valor.
 
-**Testado de ponta a ponta contra o site publicado**, não só em teoria: sem cookie barra
-(401), senha errada barra (401), 10 erradas + a 11ª (mesmo que certa) barra (429), senha
-certa entrega um cookie que a API aceita (200), logout apaga o cookie e a chamada seguinte
-volta a barrar (401). O único jeito de validar esse último passo direito foi usar um jar de
-cookie de verdade (`curl -b arquivo -c arquivo`, lendo E escrevendo) — só com `-b` o teste
-mentia "continua autenticado" porque o curl nunca aplicava o `Set-Cookie` da resposta.
+**Testado de ponta a ponta duas vezes** — primeiro local (`wrangler pages dev` com
+`.dev.vars`), depois **contra o próprio site publicado**, já com os secrets reais: sem
+cookie barra (401), senha errada barra (401), 10 erradas + a 11ª (mesmo que certa) barra
+(429, só testado local para não sujar o limitador de produção à toa), senha certa entrega
+um cookie que a API aceita (200), logout apaga o cookie e a chamada seguinte volta a
+barrar (401). O único jeito de validar esse último passo direito foi usar um jar de cookie
+de verdade (`curl -b arquivo -c arquivo`, lendo E escrevendo) — só com `-b` o teste mentia
+"continua autenticado" porque o curl nunca aplicava o `Set-Cookie` da resposta.
+
+Um `405` isolado apareceu numa tentativa de login logo depois do deploy; a mesma chamada,
+repetida na hora, respondeu 204 certinho, e o ciclo inteiro (login → sessão → logout →
+barrado de novo) rodou limpo em seguida. Parece o mesmo tipo de soluço passageiro do `7403`
+já registrado acima — não reproduziu numa segunda tentativa.
 
 **Reordenar fotos é por botão (subir/descer), não arrastar** — decisão deliberada:
 drag-and-drop é ruim no toque de celular, e é de celular que o plano pede para o painel

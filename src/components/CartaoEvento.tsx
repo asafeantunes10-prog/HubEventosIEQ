@@ -23,7 +23,7 @@ export function CartaoEvento({ evento }: Props) {
       to={`/e/${evento.slug}`}
       className="group focus-visible:ring-3 focus-visible:ring-primary/50 focus-visible:outline-none rounded-xl"
     >
-      <article className="superficie overflow-hidden rounded-xl transition-transform duration-300 group-hover:-translate-y-0.5">
+      <article className="superficie-identidade overflow-hidden rounded-xl transition-transform duration-300 group-hover:-translate-y-0.5">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {evento.capa ? (
             <Imagem

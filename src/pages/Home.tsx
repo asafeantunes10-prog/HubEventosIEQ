@@ -64,8 +64,8 @@ export function Home() {
           </h1>
 
           <p className="mt-6 leading-relaxed text-muted-foreground">
-            As fotos de cada evento da igreja, reunidas num lugar só. Sem conta, sem pedido de
-            permissão, sem link que expira: é só abrir, ver e baixar o que você quiser.
+            Fotos de todos os eventos da igreja. É só clicar para baixar e compartilhar nas
+            suas redes sociais.
           </p>
         </header>
 
@@ -85,9 +85,9 @@ export function Home() {
           )}
 
           {estado.tipo === 'pronto' && estado.eventos.length === 0 && (
-            <div className="superficie brilho-tema flex items-center gap-4 rounded-xl p-5">
+            <div className="superficie-identidade flex items-center gap-4 rounded-xl p-5">
               <Camera className="size-5 shrink-0 text-primary" aria-hidden />
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-sm leading-relaxed text-champanhe-claro/80">
                 Nenhum evento publicado ainda. Volte em breve.
               </p>
             </div>

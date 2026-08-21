@@ -500,6 +500,22 @@
       linear-gradient(170deg, #101a2c 0%, #0c1420 45%, #080c14 100%);
     }
 
+  /*
+    `.superficie` foi pensada pra cima do halo neutro (marrom solido) — sobre
+    os fundos novos (`.fundo-identidade`, `.fundo-evento`) ela lia como uma
+    caixa antiga colada por cima do gradiente, sem nenhuma relacao com ele.
+    Translucida com blur: o brilho por baixo continua aparecendo atraves do
+    cartao, em vez de escondido atras dele.
+  */
+  .superficie-identidade {
+    background: color-mix(in oklab, var(--tema-superficie) 55%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow:
+      var(--sombra-carta),
+      inset 0 1px 0 color-mix(in oklab, var(--tema-champanhe-claro) 8%, transparent);
+    border: 1px solid color-mix(in oklab, var(--tema-champanhe-claro) 14%, transparent);
+    }
+
 }
 
 /*

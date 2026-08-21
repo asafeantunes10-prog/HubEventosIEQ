@@ -58,8 +58,14 @@ const PASTA_FOTOS = resolve(RAIZ, 'fotos')
 /** O que o `vite build` produz e o que o `pages deploy` envia. */
 const PASTA_DIST = resolve(RAIZ, 'dist')
 
-/** Precisa bater com `name` no `wrangler.toml`. */
-const PROJETO_PAGES = 'hub-eventos-ieq'
+/**
+ * O projeto Pages, e o endereco publico: eventos-ieq.pages.dev.
+ *
+ * Nao e o mesmo nome do banco D1 (`hub-eventos-ieq`) de proposito: o projeto
+ * foi criado com o nome curto, que e o que vai ser divulgado, e renomear um
+ * projeto Pages significa perder o endereco. O banco fica como esta.
+ */
+const PROJETO_PAGES = 'eventos-ieq'
 
 /** As duas versoes. Os mesmos sufixos que `urlFoto()` monta em `src/lib/fotos.ts`. */
 const VERSOES = [

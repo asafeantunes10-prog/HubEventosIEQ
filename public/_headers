@@ -1,0 +1,32 @@
+# Cabecalhos que o Cloudflare Pages aplica aos arquivos publicados.
+#
+# O padrao do Pages para asset e `max-age=0, must-revalidate`: seguro para um
+# site comum, caro para uma galeria. Abrir um evento de 500 fotos pela segunda
+# vez dispararia uma revalidacao por miniatura — centenas de idas ao servidor
+# que terminam em "304, nao mudou". No Wi-Fi passa despercebido; no 4G da praca
+# da igreja, e a diferenca entre a grade aparecer na hora e levar segundos.
+
+# UM ANO, IMUTAVEL.
+#
+# Isso so e seguro porque o nome do arquivo carrega um identificador sorteado
+# (`8feb55da529f-t.webp`) que nunca se repete: o conteudo daquele endereco nunca
+# muda. Publicar uma foto corrigida cria um nome novo, entao nao existe o risco
+# classico de alguem ficar preso a uma versao velha em cache.
+#
+# `immutable` e o que faz o navegador nem perguntar — sem ele, um F5 revalida
+# tudo mesmo dentro do prazo.
+/fotos/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Os arquivos que o Vite gera ja levam hash do conteudo no nome, entao valem a
+# mesma regra.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# O HTML NAO entra nessa regra, de proposito: ele e o unico arquivo cujo
+# endereco nao muda quando o conteudo muda. Cachear `/` por um ano deixaria
+# quem ja visitou preso na versao antiga do site — inclusive sem ver os eventos
+# novos. Fica com revalidacao, que e barata: um arquivo de 1,5 KB.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

@@ -15,7 +15,7 @@ fonte da verdade sobre o **que** construir. Este arquivo diz **onde o trabalho p
 system trazido do molde e limpo, repositório próprio, banco D1 criado e migrado (local e
 remoto).
 
-**Etapa 2 (Script de publicação) — concluída, menos o deploy.** `scripts/publicar.mjs`
+**Etapa 2 (Script de publicação) — concluída.** `scripts/publicar.mjs`
 faz o caminho inteiro: gera `-t.webp` (400px) e `-g.webp` (2048px), extrai o LQIP, grava
 os metadados no D1, apaga arquivos órfãos, escreve um espelho `fotos.json`, roda o build e
 popula `dist/fotos/` por hardlink. É **retomável**: compara `nome_original` com o banco e
@@ -28,17 +28,23 @@ quando não precisar mais.
 
 `scripts/d1.mjs` é a camada de banco, e o `arquivar.mjs` da etapa 6 deve reusá-la.
 
-**Próxima: etapa 3 — leitura pública.** As Functions `api/eventos.ts` e
-`api/eventos/[slug].ts`, a `Home.tsx` com a grade de eventos e a `Evento.tsx` com mosaico
-e visualizador. Os componentes de galeria já estão prontos e adaptados, esperando dados.
+**Próxima: etapa 3 — leitura pública.** Hoje o site no ar mostra só a página de fundação:
+não há Functions (`functions/` está vazia, e o deploy avisa isso) nem página de evento.
+Falta escrever `api/eventos.ts`, `api/eventos/[slug].ts`, a `Home.tsx` com a grade de
+eventos e a `Evento.tsx` com mosaico e visualizador. Os componentes de galeria já estão
+prontos e adaptados, esperando dados.
 
-**Bloqueio:** o projeto Pages não existe, então nada foi publicado ainda. O script detecta
-isso e para com a instrução, sem criar nada por conta própria. **Pergunte ao Asafe** antes
-— ele pode preferir criar pelo painel:
+**O site está no ar: https://eventos-ieq.pages.dev** — publicado pelo próprio
+`npm run publicar`. O envio é incremental de verdade (o segundo deploy reenviou 0 de 29
+arquivos), então publicar o evento 20 não reenvia os 19 anteriores.
 
-```
-npx wrangler pages project create hub-eventos-ieq --production-branch=main
-```
+Atenção ao nome: o projeto Pages é **`eventos-ieq`**, e o banco D1 é `hub-eventos-ieq`.
+São diferentes de propósito — renomear um projeto Pages custaria o endereço, que é o que
+vai ser divulgado.
+
+`public/_headers` põe `immutable` de um ano em `/fotos/*` e em `/assets/*`, e deixa o HTML
+revalidando. Sem isso, o padrão do Pages (`max-age=0, must-revalidate`) faria cada visita
+revalidar uma por uma as 500 miniaturas do evento.
 
 ### Pendência pequena, herdada da etapa 1
 

@@ -15,7 +15,10 @@
 # wrangler sugere um nome derivado do banco; "BANCO" foi escolhido por ser mais
 # legivel no meio de uma Function.
 
-name = "hub-eventos-ieq"
+# O projeto Pages, e o endereco publico: eventos-ieq.pages.dev. Nao bate com o
+# nome do banco logo abaixo, e tudo bem: renomear um projeto Pages custaria o
+# endereco, que e justamente o que vai ser divulgado.
+name = "eventos-ieq"
 compatibility_date = "2026-08-20"
 pages_build_output_dir = "dist"
 

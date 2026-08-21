@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { ChevronLeft, Loader2, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { BaixarTudo } from '@/components/galeria/BaixarTudo'
 import { GradeFotos } from '@/components/galeria/GradeFotos'
 import { Visualizador } from '@/components/galeria/Visualizador'
 import { buscarEvento, ErroApi } from '@/lib/api'
@@ -32,13 +33,7 @@ export function Evento() {
   return <PaginaEvento key={slug} slug={slug} />
 }
 
-/**
- * O hub de fotos de um evento.
- *
- * O download aqui e SEMPRE foto a foto — o botao "baixar tudo" em ZIP e a
- * etapa 4, que traz de volta `baixarEventoEmZip` (ja existe em `zip.ts`, so
- * nao esta ligado a nenhuma tela ainda).
- */
+/** O hub de fotos de um evento: cabecalho, grade, visualizador e download. */
 function PaginaEvento({ slug }: { slug: string | undefined }) {
   const [estado, setEstado] = React.useState<Estado>({ tipo: 'carregando' })
   const [indiceAberto, setIndiceAberto] = React.useState<number | null>(null)
@@ -153,6 +148,12 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
 
         {evento.descricao && (
           <p className="mt-4 leading-relaxed text-muted-foreground">{evento.descricao}</p>
+        )}
+
+        {evento.permiteZip && (
+          <div className="mt-5">
+            <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
+          </div>
         )}
       </header>
 

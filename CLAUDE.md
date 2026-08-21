@@ -39,6 +39,28 @@ O evento de teste (`culto-de-teste-2026`) foi **publicado** para essa verificaç
 que está no ar agora em https://eventos-ieq.pages.dev. É dado de teste; despublicar ou
 apagar fica a critério do Asafe (pelo D1 direto, já que o painel ainda não existe).
 
+**Etapa 4 (Download) — concluída.** `src/components/galeria/BaixarTudo.tsx` liga o
+`baixarEventoEmZip` que já existia em `zip.ts` a uma tela: botão com progresso
+(`concluídas/total`), barra e cancelamento via `AbortController`. Só aparece quando
+`evento.permiteZip` é verdadeiro. Download individual (cartão e visualizador) já vinha da
+etapa 3.
+
+Testado de ponta a ponta contra o site publicado: busquei as 6 fotos reais de
+`https://eventos-ieq.pages.dev/fotos/...` com `client-zip` fora do navegador (mesma
+biblioteca, mesmo fluxo) e o ZIP resultante abriu com `unzip -t` sem erro, 6 arquivos,
+tamanhos batendo com as versões `-g`. O que não foi possível testar aqui — sem um
+Chrome/Firefox de verdade disponível — é o caminho `showSaveFilePicker` vs. o de queda para
+Blob, e o clique real no botão "Cancelar" a meio de um download. A lógica dos dois foi
+revisada com cuidado (inclusive a distinção entre "a pessoa fechou o diálogo de salvar" e
+"o cancelamento pelo botão abortou o fetch", que precisavam parecer a mesma coisa na
+tela), mas **vale um teste manual no navegador** antes de divulgar o site.
+
+**Conhecido e adiado para a etapa 6:** uma rota que não bate com `/` nem `/e/:slug` cai no
+fallback de SPA do Pages (recebe o `index.html`, status 200) e o React Router não
+renderiza nada — tela em branco. A página 404 de verdade está na lista da etapa 6.
+
+**Próxima: etapa 5 — painel admin.**
+
 **Conhecido e adiado para a etapa 6:** uma rota que não bate com `/` nem `/e/:slug` cai no
 fallback de SPA do Pages (recebe o `index.html`, status 200) e o React Router não
 renderiza nada — tela em branco. A página 404 de verdade está na lista da etapa 6.

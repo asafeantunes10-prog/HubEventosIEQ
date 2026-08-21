@@ -1,33 +1,95 @@
-import { Camera } from 'lucide-react'
+import * as React from 'react'
+import { Camera, Loader2, TriangleAlert } from 'lucide-react'
+
+import { CartaoEvento } from '@/components/CartaoEvento'
+import { listarEventos } from '@/lib/api'
+import type { EventoComCapa } from '@/lib/tipos'
+
+type Estado =
+  | { tipo: 'carregando' }
+  | { tipo: 'pronto'; eventos: EventoComCapa[] }
+  | { tipo: 'erro'; mensagem: string }
 
 /**
- * A capa do site.
+ * A capa do site: o texto explicando o que e o hub, e a grade de eventos.
  *
- * Nesta etapa ela existe para uma coisa so: provar que a fundacao esta de pe —
- * as fontes carregam, os tokens de cor valem, o Tailwind compila. A grade de
- * eventos entra na etapa 2, quando houver banco de onde le-los.
+ * Busca a lista uma vez, ao montar. Nao ha filtro nem busca aqui — com um
+ * evento por mes (a cadencia que o plano assume), uma pessoa rolando a pagina
+ * acha o que quer mais rapido do que digitando numa caixa de busca.
  */
 export function Home() {
+  const [estado, setEstado] = React.useState<Estado>({ tipo: 'carregando' })
+
+  React.useEffect(() => {
+    let cancelado = false
+
+    listarEventos()
+      .then((eventos) => {
+        if (!cancelado) setEstado({ tipo: 'pronto', eventos })
+      })
+      .catch((e: unknown) => {
+        if (!cancelado) {
+          setEstado({
+            tipo: 'erro',
+            mensagem: e instanceof Error ? e.message : 'Não consegui carregar os eventos.',
+          })
+        }
+      })
+
+    // Evita `setState` numa tela que a pessoa ja fechou — a busca pode voltar
+    // depois do componente ter desmontado.
+    return () => {
+      cancelado = true
+    }
+  }, [])
+
   return (
-    <main className="lados-seguros topo-seguro mx-auto flex min-h-svh w-full max-w-3xl flex-col justify-center py-20">
-      <span className="rotulo-seccao">Igreja do Evangelho Quadrangular</span>
+    <main className="lados-seguros topo-seguro mx-auto w-full max-w-5xl py-16 sm:py-20">
+      <header className="max-w-prose">
+        <span className="rotulo-seccao">Igreja do Evangelho Quadrangular</span>
 
-      <h1 className="titulo-metal font-heading mt-4 text-4xl tracking-tight sm:text-6xl">
-        Fotos dos eventos
-      </h1>
+        <h1 className="titulo-metal font-heading mt-4 text-4xl tracking-tight sm:text-6xl">
+          Fotos dos eventos
+        </h1>
 
-      <p className="mt-6 max-w-prose leading-relaxed text-muted-foreground">
-        As fotos de cada evento da igreja, reunidas num lugar só. Sem conta, sem pedido de
-        permissão, sem link que expira: é só abrir, ver e baixar o que você quiser.
-      </p>
-
-      <div className="superficie brilho-tema mt-12 flex items-center gap-4 rounded-xl p-5">
-        <Camera className="size-5 shrink-0 text-primary" aria-hidden />
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          Fundação no ar. A publicação de fotos e a lista de eventos entram nas próximas
-          etapas.
+        <p className="mt-6 leading-relaxed text-muted-foreground">
+          As fotos de cada evento da igreja, reunidas num lugar só. Sem conta, sem pedido de
+          permissão, sem link que expira: é só abrir, ver e baixar o que você quiser.
         </p>
-      </div>
+      </header>
+
+      <section className="mt-14">
+        {estado.tipo === 'carregando' && (
+          <div className="flex items-center gap-3 py-12 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            Carregando os eventos…
+          </div>
+        )}
+
+        {estado.tipo === 'erro' && (
+          <div className="flex items-start gap-3 rounded-xl bg-destructive/10 p-5 text-sm text-destructive">
+            <TriangleAlert className="size-5 shrink-0" aria-hidden />
+            {estado.mensagem}
+          </div>
+        )}
+
+        {estado.tipo === 'pronto' && estado.eventos.length === 0 && (
+          <div className="superficie brilho-tema flex items-center gap-4 rounded-xl p-5">
+            <Camera className="size-5 shrink-0 text-primary" aria-hidden />
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Nenhum evento publicado ainda. Volte em breve.
+            </p>
+          </div>
+        )}
+
+        {estado.tipo === 'pronto' && estado.eventos.length > 0 && (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {estado.eventos.map((evento) => (
+              <CartaoEvento key={evento.id} evento={evento} />
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   )
 }

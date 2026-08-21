@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { LimiteDeErro } from '@/components/LimiteDeErro'
 import { Home } from '@/pages/Home'
+import { Evento } from '@/pages/Evento'
 
 /**
  * O roteador do site.
@@ -20,6 +21,7 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/e/:slug" element={<Evento />} />
         </Routes>
       </BrowserRouter>
     </LimiteDeErro>

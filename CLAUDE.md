@@ -15,36 +15,36 @@ fonte da verdade sobre o **que** construir. Este arquivo diz **onde o trabalho p
 system trazido do molde e limpo, repositório próprio, banco D1 criado e migrado (local e
 remoto).
 
-**Etapa 2 (Script de publicação) — concluída.** `scripts/publicar.mjs`
-faz o caminho inteiro: gera `-t.webp` (400px) e `-g.webp` (2048px), extrai o LQIP, grava
-os metadados no D1, apaga arquivos órfãos, escreve um espelho `fotos.json`, roda o build e
-popula `dist/fotos/` por hardlink. É **retomável**: compara `nome_original` com o banco e
-pula o que já passou, continuando a numeração de `ordem` sem buraco.
+**Etapa 2 (Script de publicação) — concluída.** `scripts/publicar.mjs` faz o caminho
+inteiro: processa, grava no D1, limpa órfãos, escreve um espelho `fotos.json`, constrói e
+publica (`scripts/d1.mjs` isola a conversa com o banco). Retomável de verdade.
 
-Testado com 6 fotos: retomada após queda simulada, limpeza de órfãos, hardlink (mesmo
-inode) e escrita no D1 remoto. Há um evento de teste no banco de produção —
-`culto-de-teste-2026`, em **rascunho**, invisível no site. Serve para a etapa 3; apague
-quando não precisar mais.
+**Etapa 3 (Leitura pública) — concluída.** `functions/api/eventos.ts` (lista para a home,
+com a capa resolvida por `coalesce(capa_id, primeira foto)`) e
+`functions/api/eventos/[slug].ts` (evento + todas as fotos, sem paginação — não há mais
+quota de requisição a economizar). `src/lib/api.ts` traduz as linhas do D1 (`snake_case`,
+booleano como 0/1) para os tipos de `tipos.ts`; nenhuma tela vê uma coluna do banco.
+`Home.tsx` busca e mostra a grade (`CartaoEvento.tsx`); `Evento.tsx` liga `GradeFotos` +
+`Visualizador` + download por foto (via `baixarUma` de `zip.ts` — o botão "baixar tudo"
+em ZIP é etapa 4). `cor_destaque` já injeta `--primary` no wrapper da página do evento.
 
-`scripts/d1.mjs` é a camada de banco, e o `arquivar.mjs` da etapa 6 deve reusá-la.
+Confirmado no ar: `/api/eventos` e `/api/eventos/:slug` respondem, 404 funciona, e as
+fotos continuam vindo de `/fotos/...` como assets estáticos — nenhuma delas passa por
+Function. `functions/tsconfig.json` (não entra no `tsc -b` da raiz; rode
+`npm run tipos:functions`) foi criado para as Functions terem checagem de tipo antes do
+deploy — o `wrangler pages deploy` compila `functions/` com o próprio esbuild e não lê
+tsconfig nenhum, então sem isso um erro de tipo ali só apareceria em produção.
 
-**Próxima: etapa 3 — leitura pública.** Hoje o site no ar mostra só a página de fundação:
-não há Functions (`functions/` está vazia, e o deploy avisa isso) nem página de evento.
-Falta escrever `api/eventos.ts`, `api/eventos/[slug].ts`, a `Home.tsx` com a grade de
-eventos e a `Evento.tsx` com mosaico e visualizador. Os componentes de galeria já estão
-prontos e adaptados, esperando dados.
+O evento de teste (`culto-de-teste-2026`) foi **publicado** para essa verificação — é o
+que está no ar agora em https://eventos-ieq.pages.dev. É dado de teste; despublicar ou
+apagar fica a critério do Asafe (pelo D1 direto, já que o painel ainda não existe).
 
-**O site está no ar: https://eventos-ieq.pages.dev** — publicado pelo próprio
-`npm run publicar`. O envio é incremental de verdade (o segundo deploy reenviou 0 de 29
-arquivos), então publicar o evento 20 não reenvia os 19 anteriores.
+**Conhecido e adiado para a etapa 6:** uma rota que não bate com `/` nem `/e/:slug` cai no
+fallback de SPA do Pages (recebe o `index.html`, status 200) e o React Router não
+renderiza nada — tela em branco. A página 404 de verdade está na lista da etapa 6.
 
-Atenção ao nome: o projeto Pages é **`eventos-ieq`**, e o banco D1 é `hub-eventos-ieq`.
-São diferentes de propósito — renomear um projeto Pages custaria o endereço, que é o que
-vai ser divulgado.
-
-`public/_headers` põe `immutable` de um ano em `/fotos/*` e em `/assets/*`, e deixa o HTML
-revalidando. Sem isso, o padrão do Pages (`max-age=0, must-revalidate`) faria cada visita
-revalidar uma por uma as 500 miniaturas do evento.
+**Próxima: etapa 4 — download.** O botão "Baixar tudo" em ZIP, com progresso e
+cancelamento — `baixarEventoEmZip` já existe em `zip.ts`, testado, só falta a tela.
 
 ### Pendência pequena, herdada da etapa 1
 

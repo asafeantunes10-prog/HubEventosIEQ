@@ -55,3 +55,16 @@ export type EventoComFotos = {
   evento: Evento
   fotos: Foto[]
 }
+
+/**
+ * Um evento com a imagem de capa ja resolvida — o que a home precisa para
+ * desenhar o cartao sem uma segunda ida ao banco.
+ *
+ * `capa` vem de `capa_id` quando o evento tem uma escolhida, ou da primeira
+ * foto (menor `ordem`) quando ninguem escolheu ainda. `null` so acontece num
+ * evento publicado sem nenhuma foto — caso raro, mas possivel entre criar o
+ * evento e rodar o primeiro `npm run publicar`.
+ */
+export type EventoComCapa = Evento & {
+  capa: Pick<Foto, 'caminho' | 'lqip' | 'largura' | 'altura'> | null
+}

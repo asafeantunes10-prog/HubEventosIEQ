@@ -76,6 +76,15 @@
     /* Superficie elevada (cartoes, faixas). */
     --color-superficie: var(--tema-superficie);
 
+    /* Cores da marca (brasao do Diaconato) como utilitarios do Tailwind —
+       `text-marca-dourado`, `border-marca-roxo` etc., sem precisar de style
+       inline toda vez que um elemento precisa de um toque da identidade. */
+    --color-marca-vermelho: var(--marca-vermelho);
+    --color-marca-vermelho-fechado: var(--marca-vermelho-fechado);
+    --color-marca-dourado: var(--marca-dourado);
+    --color-marca-azul: var(--marca-azul);
+    --color-marca-roxo: var(--marca-roxo);
+
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -505,15 +514,19 @@
     os fundos novos (`.fundo-identidade`, `.fundo-evento`) ela lia como uma
     caixa antiga colada por cima do gradiente, sem nenhuma relacao com ele.
     Translucida com blur: o brilho por baixo continua aparecendo atraves do
-    cartao, em vez de escondido atras dele.
+    cartao. A base tambem trocou de `--tema-superficie` (o marrom do tema
+    provisorio) para um tom mais proximo do proprio `.fundo-identidade`, e a
+    borda/friso viraram dourado — a cor que amarra o brasao inteiro — em vez
+    do champanhe neutro de antes.
   */
   .superficie-identidade {
-    background: color-mix(in oklab, var(--tema-superficie) 55%, transparent);
+    background: color-mix(in oklab, #14111d 55%, transparent);
     backdrop-filter: blur(16px);
     box-shadow:
-      var(--sombra-carta),
-      inset 0 1px 0 color-mix(in oklab, var(--tema-champanhe-claro) 8%, transparent);
-    border: 1px solid color-mix(in oklab, var(--tema-champanhe-claro) 14%, transparent);
+      0 1px 2px rgb(0 0 0 / 0.4),
+      0 12px 32px -12px rgb(0 0 0 / 0.7),
+      inset 0 1px 0 color-mix(in oklab, var(--marca-dourado) 14%, transparent);
+    border: 1px solid color-mix(in oklab, var(--marca-dourado) 24%, transparent);
     }
 
 }

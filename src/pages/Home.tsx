@@ -86,7 +86,7 @@ export function Home() {
 
           {estado.tipo === 'pronto' && estado.eventos.length === 0 && (
             <div className="superficie-identidade flex items-center gap-4 rounded-xl p-5">
-              <Camera className="size-5 shrink-0 text-primary" aria-hidden />
+              <Camera className="size-5 shrink-0 text-marca-dourado" aria-hidden />
               <p className="text-sm leading-relaxed text-champanhe-claro/80">
                 Nenhum evento publicado ainda. Volte em breve.
               </p>

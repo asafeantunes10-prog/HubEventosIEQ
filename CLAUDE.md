@@ -55,18 +55,50 @@ revisada com cuidado (inclusive a distinção entre "a pessoa fechou o diálogo 
 "o cancelamento pelo botão abortou o fetch", que precisavam parecer a mesma coisa na
 tela), mas **vale um teste manual no navegador** antes de divulgar o site.
 
-**Conhecido e adiado para a etapa 6:** uma rota que não bate com `/` nem `/e/:slug` cai no
-fallback de SPA do Pages (recebe o `index.html`, status 200) e o React Router não
-renderiza nada — tela em branco. A página 404 de verdade está na lista da etapa 6.
+**Etapa 5 (Painel admin) — código concluído; Access ainda não existe.** As telas
+(`PainelEventos`, `NovoEvento`, `EditarEvento`) e a API completa
+(`functions/api/admin/eventos.ts`, `.../eventos/[id].ts`, `.../eventos/[id]/fotos.ts`) estão
+escritas e testadas. Falta só uma coisa, e ela é do Asafe: **criar a equipe no Cloudflare
+Access e a aplicação para `/admin`** — ver a seção "Pare nas ações que dependem do Asafe"
+mais abaixo.
 
-**Próxima: etapa 5 — painel admin.**
+`functions/api/admin/_middleware.ts` valida o JWT do Access contra as chaves públicas da
+Cloudflare (RSASSA-PKCS1-v1_5/SHA-256, com cache de 1h) — **fechado por padrão**:
+`ACESSO_DOMINIO`/`ACESSO_AUD` (`wrangler.toml`) nascem vazios, e sem os dois NENHUMA
+requisição a `/api/admin/*` passa (503), nem por engano. Isso foi testado de duas formas:
 
-**Conhecido e adiado para a etapa 6:** uma rota que não bate com `/` nem `/e/:slug` cai no
-fallback de SPA do Pages (recebe o `index.html`, status 200) e o React Router não
-renderiza nada — tela em branco. A página 404 de verdade está na lista da etapa 6.
+1. A criptografia isolada — gerei um par de chaves RSA de verdade, assinei um JWT como o
+   Access assinaria, e confirmei que a verificação aceita o token bom e rejeita payload
+   adulterado, assinatura de outra chave, `exp` vencido, `aud` errada e `iss` errado (7 de
+   7 checagens).
+2. As rotas de CRUD contra o D1 local, com o middleware neutralizado só para o teste (e
+   restaurado byte a byte depois, `diff` confirmado): criar, listar, editar, validações
+   (slug duplicado, cor/data/status inválidos, `capaId` de outro evento recusado),
+   reordenar fotos (inclusive lista incompleta/estranha recusada) e apagar com cascata nas
+   fotos — tudo confirmado no D1 de verdade, não em teoria.
 
-**Próxima: etapa 4 — download.** O botão "Baixar tudo" em ZIP, com progresso e
-cancelamento — `baixarEventoEmZip` já existe em `zip.ts`, testado, só falta a tela.
+**O que não deu para testar:** o fluxo completo com um Access real (login Google, o
+header `Cf-Access-Jwt-Assertion` chegando de verdade). Antes de confiar nisto em produção:
+depois que o Asafe preencher as duas variáveis, abra `/admin` deslogado (tem que barrar) e
+confira os logs de uma Function se algo parecer errado.
+
+**Decisão consciente:** sem Access configurado, a *página* `/admin` continua visitável por
+qualquer um (é só HTML/JS do SPA) — mas toda chamada às Functions volta 401/503, então não
+há dado nenhum para ver. Isso é o que o plano descreve: "esconder o botão não é
+segurança", e o contrário também vale — a página existir sem fazer nada não é uma falha de
+segurança. O Access, uma vez configurado, também passa a barrar a própria página no edge.
+
+**Reordenar fotos é por botão (subir/descer), não arrastar** — decisão deliberada: drag-
+and-drop é ruim no toque de celular, e é de celular que o plano pede para o painel
+funcionar.
+
+**Próxima: etapa 6 — compartilhamento e acabamento.** Meta tags OG por evento via
+HTMLRewriter, `robots.txt`, página 404 de verdade (ver o item abaixo) e o README.
+
+**Conhecido e adiado para a etapa 6:** uma rota que não bate com nenhuma rota declarada
+(`/`, `/e/:slug`, `/admin`, `/admin/eventos/novo`, `/admin/eventos/:id`) cai no fallback de
+SPA do Pages (recebe o `index.html`, status 200) e o React Router não renderiza nada —
+tela em branco. A página 404 de verdade está na lista da etapa 6.
 
 ### Pendência pequena, herdada da etapa 1
 
@@ -102,6 +134,13 @@ Proibido: `import` que saia da pasta, alias de TS ou Vite apontando para fora, `
 
 Criar conta, `wrangler login`, criar projeto Pages, ligar o Cloudflare Access — tudo que
 exige navegador ou decisão dele. Diga exatamente o que fazer e espere. Não contorne.
+
+**O Cloudflare Access, especificamente:** criar a equipe (escolhe um nome, vira
+`<nome>.cloudflareaccess.com`), uma aplicação self-hosted apontando para
+`eventos-ieq.pages.dev/admin*`, política por e-mail com provedor Google. No fim ele mostra
+o **Application Audience (AUD) Tag**. As duas informações — o domínio da equipe e o AUD —
+vão em `wrangler.toml`, em `ACESSO_DOMINIO` e `ACESSO_AUD` (hoje vazios). Preencher os dois
+é o único passo que falta para o painel ligar de verdade; nenhum código precisa mudar.
 
 ### 4. Convenção de idioma
 

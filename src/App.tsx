@@ -3,6 +3,9 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import { LimiteDeErro } from '@/components/LimiteDeErro'
 import { Home } from '@/pages/Home'
 import { Evento } from '@/pages/Evento'
+import { PainelEventos } from '@/pages/admin/PainelEventos'
+import { NovoEvento } from '@/pages/admin/NovoEvento'
+import { EditarEvento } from '@/pages/admin/EditarEvento'
 
 /**
  * O roteador do site.
@@ -22,6 +25,16 @@ export function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/e/:slug" element={<Evento />} />
+          {/*
+            O Cloudflare Access protege /admin* no EDGE, antes de qualquer uma
+            destas paginas chegar a carregar — ver `functions/api/admin/_middleware.ts`
+            para a protecao que vale de verdade, contra a API. Enquanto o Access
+            nao existir, estas rotas ficam visiveis mas inuteis: toda chamada as
+            Functions de admin volta 503.
+          */}
+          <Route path="/admin" element={<PainelEventos />} />
+          <Route path="/admin/eventos/novo" element={<NovoEvento />} />
+          <Route path="/admin/eventos/:id" element={<EditarEvento />} />
         </Routes>
       </BrowserRouter>
     </LimiteDeErro>

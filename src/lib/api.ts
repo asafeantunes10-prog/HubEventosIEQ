@@ -9,8 +9,14 @@ import type { Evento, EventoComCapa, EventoComFotos, Foto } from '@/lib/tipos'
  * a ver o nome de uma coluna ou um `0` que significa `false`.
  */
 
-/** Uma linha de `eventos` como o D1 devolve, antes da traducao. */
-type LinhaEvento = {
+/**
+ * Uma linha de `eventos` como o D1 devolve, antes da traducao.
+ *
+ * Exportado (junto com `LinhaFoto`, `paraEvento` e `paraFoto` abaixo) para
+ * `apiAdmin.ts` reusar a MESMA traducao — o painel le e escreve os mesmos
+ * formatos que o site publico le, so que com mais campos visiveis de uma vez.
+ */
+export type LinhaEvento = {
   id: string
   slug: string
   titulo: string
@@ -27,7 +33,7 @@ type LinhaEvento = {
   total_fotos: number
 }
 
-type LinhaFoto = {
+export type LinhaFoto = {
   id: string
   evento_id: string
   caminho: string
@@ -38,7 +44,7 @@ type LinhaFoto = {
   ordem: number
 }
 
-function paraEvento(linha: LinhaEvento): Evento {
+export function paraEvento(linha: LinhaEvento): Evento {
   return {
     id: linha.id,
     slug: linha.slug,
@@ -57,7 +63,7 @@ function paraEvento(linha: LinhaEvento): Evento {
   }
 }
 
-function paraFoto(linha: LinhaFoto): Foto {
+export function paraFoto(linha: LinhaFoto): Foto {
   return {
     id: linha.id,
     eventoId: linha.evento_id,

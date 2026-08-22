@@ -12,8 +12,8 @@
  *      diarias por miniatura, e um ZIP de 500 fotos comeria meio dia de quota
  *      de uma vez. Como asset estatico, esse teto simplesmente nao existe.
  *
- * O banco guarda so o `caminho` — `culto-jovens-2026/a1b2`, sem sufixo e sem
- * extensao. Montar a URL aqui, e so aqui, e o que torna barata uma mudanca
+ * O banco guarda so o `caminho` — `culto-jovens-2026/IMG_0007`, sem sufixo e
+ * sem extensao. Montar a URL aqui, e so aqui, e o que torna barata uma mudanca
  * futura: migrar para o R2 (se um dia houver cartao) ou quebrar o site em um
  * segundo projeto Pages passa a ser mexer nesta funcao, e em nenhuma tela.
  */

@@ -42,3 +42,10 @@ dist-ssr
 .wrangler
 .dev.vars
 .env*
+
+# ExifTool vendorizado para scripts/converter-raw.mjs (ver ali o por que).
+# Fora do git de proposito: e um binario + runtime Perl de ~35 MB, nao muda,
+# e nao ha motivo pra pesar todo clone do repositorio com isso. Se a pasta
+# nao existir numa maquina nova, o proprio script avisa exatamente o que
+# baixar e onde por.
+/ferramentas

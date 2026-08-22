@@ -80,6 +80,20 @@ const ESFORCO = 6
  */
 const DIGITOS_ID = 12
 
+/**
+ * Nome amigavel do ARQUIVO (e do `caminho` no banco) — o que aparece pra quem
+ * navega a pasta `fotos/` ou olha a URL da imagem. E DIFERENTE do `id`
+ * acima: `id` continua sendo a chave primaria (aleatoria, unica no banco
+ * inteiro, e o que o painel usa para apagar uma foto ou escolher a capa);
+ * este e so o rotulo publico, unico dentro da pasta do evento.
+ *
+ * "IMG_0001" e nao um numero cru: e o mesmo prefixo generico que toda camera
+ * usa, entao continua neutro (nao vaza "foto numero tal do fulano") e ainda
+ * assim da pra saber a ordem so olhando o nome do arquivo.
+ */
+const PREFIXO_ARQUIVO = 'IMG_'
+const DIGITOS_SEQUENCIA = 4
+
 const EXTENSOES = /\.(jpe?g|png|webp|tiff?|avif)$/i
 
 // ---------------------------------------------------------------- utilitarios
@@ -115,6 +129,7 @@ function paraSlug(texto) {
  */
 async function gerarLqip(entrada) {
   const buffer = await sharp(entrada)
+    .rotate() // sem isto, foto vertical de camera vira miniatura deitada — ver processarFoto
     .resize(20, null, { fit: 'inside' })
     .blur(1.2)
     .webp({ quality: 32, alphaQuality: 40 })
@@ -171,7 +186,7 @@ function lerArgumentos() {
  */
 function garantirEvento(slug, titulo, opcoes) {
   const achados = consultar(
-    `select id, titulo, status from eventos where slug = ${aspas(slug)};`,
+    `select id, titulo, status, proximo_numero_foto from eventos where slug = ${aspas(slug)};`,
     opcoes
   )
 
@@ -195,7 +210,7 @@ function garantirEvento(slug, titulo, opcoes) {
     opcoes
   )
 
-  return { id, titulo, status: 'rascunho', novo: true }
+  return { id, titulo, status: 'rascunho', proximo_numero_foto: 0, novo: true }
 }
 
 /**
@@ -288,28 +303,64 @@ function atualizarTotal(eventoId, opcoes) {
   )
 }
 
+/**
+ * Avanca o contador do nome amigavel pelo total de arquivos TENTADOS, nao so
+ * dos que deram certo. Se a foto 5 falhar (JPEG corrompido) o numero dela
+ * fica queimado para sempre — ninguem mais recebe "IMG_0005" neste evento —
+ * em vez de a proxima execucao reaproveitar esse numero achando que ele nunca
+ * foi usado.
+ */
+function avancarContador(eventoId, quantidade, opcoes) {
+  executar(
+    `update eventos set proximo_numero_foto = proximo_numero_foto + ${quantidade} ` +
+      `where id = ${aspas(eventoId)};`,
+    opcoes
+  )
+}
+
 // ---------------------------------------------------------------- processamento
 
-async function processarFoto(caminho, slug, ordem, destino) {
-  const { width } = await sharp(caminho).metadata()
+async function processarFoto(caminho, slug, ordem, numero, destino) {
+  const { width, height, orientation } = await sharp(caminho).metadata()
 
   /*
-    Identificador sorteado, e nao o nome do arquivo. Duas razoes: nomes de
-    camera se repetem entre cartoes (`IMG_0001` sai de todo cartao zerado), e
-    uma chave que nunca muda deixa o navegador cachear a foto para sempre sem
-    risco de mostrar uma imagem velha no lugar de outra.
+    Camera grava o sensor deitado e um FLAG de exif dizendo "gire 90 pra
+    mostrar em pe" — o pixel em si continua deitado. `sharp` so aplica esse
+    giro se mandado (`.rotate()`, la embaixo); sem isso toda foto vertical sai
+    deitada no site, silenciosamente (nao e erro, e resize/webp funcionando
+    perfeitos na orientacao errada). Orientation 5-8 e giro de 90/270 graus, e
+    ai `width`/`height` de metadata() saem trocados em relacao ao que a foto
+    vira depois de girada — por isso a largura "de verdade" usa a maior
+    dimensao quando o giro e de 90/270.
+  */
+  const larguraEfetiva = orientation >= 5 && orientation <= 8 ? height : width
+
+  /*
+    Duas identidades, com papeis diferentes:
+
+    `id` — sorteado, e nao o nome do arquivo. Duas razoes: nomes de camera se
+    repetem entre cartoes (`IMG_0001` sai de todo cartao zerado), e uma chave
+    que nunca muda deixa o navegador cachear a foto para sempre sem risco de
+    mostrar uma imagem velha no lugar de outra. E chave primaria da tabela
+    inteira — precisa ser unica entre TODOS os eventos, nao so este.
+
+    `base` — o rotulo amigavel (`IMG_0007`) que vira o nome do ARQUIVO e o
+    `caminho` no banco. So precisa ser unico dentro da pasta deste evento, por
+    isso pode ser sequencial sem risco de colidir com outro evento.
   */
   const id = randomUUID().replace(/-/g, '').slice(0, DIGITOS_ID)
+  const base = `${PREFIXO_ARQUIVO}${String(numero).padStart(DIGITOS_SEQUENCIA, '0')}`
 
   const gerados = []
   for (const versao of VERSOES) {
     // Nunca ampliar: largura maior que o original so gera peso e borrao.
-    const largura = Math.min(versao.largura, width)
+    const largura = Math.min(versao.largura, larguraEfetiva)
 
     const info = await sharp(caminho)
+      .rotate() // gira pelo exif ANTES de redimensionar — ver comentario acima
       .resize(largura, null, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: QUALIDADE, effort: ESFORCO })
-      .toFile(resolve(destino, `${id}-${versao.sufixo}.webp`))
+      .toFile(resolve(destino, `${base}-${versao.sufixo}.webp`))
 
     gerados.push({ largura: info.width, altura: info.height, bytes: info.size })
   }
@@ -320,7 +371,7 @@ async function processarFoto(caminho, slug, ordem, destino) {
     registro: {
       id,
       // Sem sufixo e sem extensao: quem completa e `urlFoto()`.
-      caminho: `${slug}/${id}`,
+      caminho: `${slug}/${base}`,
       nome_original: basename(caminho),
       // As dimensoes da versao GRANDE, que e a proporcao que a grade reserva.
       largura: grande.largura,
@@ -375,7 +426,9 @@ async function principal() {
     const caminho = resolve(pasta, arquivo)
 
     try {
-      const r = await processarFoto(caminho, slug, jaTem.proximaOrdem + indice, destino)
+      // +1: gente conta fotos a partir de 1, nao de 0 — "IMG_0001", nao "IMG_0000".
+      const numero = evento.proximo_numero_foto + indice + 1
+      const r = await processarFoto(caminho, slug, jaTem.proximaOrdem + indice, numero, destino)
 
       registros.push(r.registro)
       bytesEntrada += r.bytesEntrada
@@ -410,6 +463,12 @@ async function principal() {
   if (registros.length > 0) {
     inserirFotos(evento.id, registros, opcoes)
     atualizarTotal(evento.id, opcoes)
+  }
+
+  // Avanca pelo total TENTADO (`arquivos.length`), nao so pelos que entraram
+  // no banco — ver o comentario em `avancarContador`.
+  if (arquivos.length > 0) {
+    avancarContador(evento.id, arquivos.length, opcoes)
   }
 
   const orfaos = limparOrfaos(slug, evento.id, destino, opcoes)

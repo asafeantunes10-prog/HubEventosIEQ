@@ -231,6 +231,69 @@ disponível nesta sessão) — vale conferir visualmente antes de divulgar. **N�
 publicado em produção** — o `git status` segue limpo do commit `6af726d` até alguém decidir
 publicar isto.
 
+**Nome de arquivo amigavel (`IMG_0001`, `IMG_0002`...).** `npm run publicar` gerava
+`<id-aleatorio>-t.webp` / `-g.webp` — ilegivel pra quem abre a pasta `fotos/` na mao. Agora
+o arquivo (e o `caminho` gravado no banco) usa um numero sequencial por evento
+(`PREFIXO_ARQUIVO`/`DIGITOS_SEQUENCIA` em `scripts/publicar.mjs`), comecando em 1. O `id`
+que e chave primaria da tabela `fotos` continua sendo o aleatorio de sempre — sao duas
+identidades com papeis diferentes (comentario em `processarFoto` explica): `id` precisa ser
+unico no BANCO INTEIRO e e o que o painel usa para apagar foto/capa; o numero amigavel so
+precisa ser unico DENTRO da pasta do evento.
+
+O numero vem de `eventos.proximo_numero_foto` (coluna nova, migracao
+`0003_numero_amigavel.sql`) — GRAVADO, nunca recalculado por "maior numero que existe hoje".
+Se fosse recalculado, apagar a foto de maior numero pelo painel (endpoint que ja existia,
+ver "Apagar foto avulsa" acima) faria a proxima publicacao reaproveitar aquele numero para
+um arquivo DIFERENTE — colisao de nome que um navegador com cache antigo mostraria errado.
+O contador so cresce, avanca pelo total de arquivos TENTADOS (nao so os que deram certo, pra
+uma falha no meio do lote nao deixar um numero livre pra reuso) e nunca reflete quantas
+fotos existem agora — so quantas ja foram atribuidas.
+
+**Testado local** (`--local`, fotos sinteticas, evento descartavel): numeracao comecando em
+`IMG_0001`; rodar de novo sem fotos novas nao reprocessa nem avanca o contador (retomada
+intacta); apagar a linha de `IMG_0003` do banco e do disco (simulando o endpoint do painel)
+e publicar de novo — a foto seguinte virou `IMG_0004`, nunca reaproveitou `0003`. `npm run
+build`, `tipos:functions` e `lint` limpos depois da mudanca. Dados de teste apagados do
+banco local e do disco em seguida. Migracao aplicada no D1 local **e no remoto** (`npm run
+migrar`, rodada em producao); eventos ja publicados nao precisaram de nenhum ajuste, o `id`
+deles nao mudou, so fotos NOVAS depois da migracao ganham o nome bonito.
+
+**Bug de verdade encontrado em producao, e corrigido: foto vertical saia deitada no
+site.** Veio a tona publicando `diaconato-homens-2026` (evento real, ~100 fotos, primeira
+vez que uma camera de verdade — nao WhatsApp — alimentou o pipeline). Causa: `sharp` nunca
+girava o pixel pela tag `Orientation` do EXIF antes de redimensionar — uma foto tirada com a
+camera vertical continua deitada nos bytes, so um FLAG separado no arquivo diz "gire 90 pra
+mostrar certo", e nada em `processarFoto` (nem em `gerarLqip`) lia esse flag. Nao era erro
+nenhum pro script — resize e webp funcionavam perfeitos na orientacao errada, silenciosos.
+Corrigido com `.rotate()` (sem argumento, o sharp le a tag e gira sozinho) nos dois lugares;
+a largura usada pra nunca ampliar (`Math.min(versao.largura, width)`) tambem precisou virar
+`larguraEfetiva` — pra orientacao 5-8 (giro de 90/270) `width`/`height` do `metadata()` saem
+TROCADOS em relacao ao que a foto vira depois de girada. Vale pra QUALQUER foto vertical
+daqui pra frente, de qualquer camera — nao e algo especifico deste evento.
+
+O mesmo evento expos outro buraco: **nao existia caminho pra fotos RAW (`.ARW`)**. `sharp`
+nao decodifica RAW de camera (so imagem de verdade — JPEG, PNG, WebP, TIFF), entao um
+`.ARW` na pasta era ignorado por `publicar.mjs` sem aviso nenhum — a contagem de fotos nao
+mudava e nada explicava o motivo. `scripts/converter-raw.mjs` (novo, `npm run
+converter-raw "pasta"`) resolve: toda foto RAW ja tem, embutida no proprio arquivo, uma
+PREVIA em JPEG (o que a camera usa no visor) — o script extrai essa previa com o ExifTool E
+copia a tag `Orientation` do `.ARW` pra dentro dela num segundo passo, porque a previa sai
+SEM essa tag (ela mora so no arquivo original) — sem os dois passos juntos, a foto teria
+saido deitada de novo, so que por um motivo diferente (tag ausente, nao tag ignorada). Nunca
+apaga nem move o `.ARW`; se o `.jpg` ja existe, pula. ExifTool vendorizado em
+`ferramentas/exiftool/` (fora do git, ver `.gitignore` — binario + runtime Perl de ~35 MB,
+numa maquina nova o proprio script explica o que baixar e onde por).
+
+**Incidente no meio do caminho: uma foto do evento foi perdida de verdade.** Durante o
+diagnostico, um arquivo chamado `DSC07292.jpg` na pasta nao era uma previa gerada — era o
+`.ARW` original renomeado a mao pelo Asafe pra `.jpg` (mesmo tamanho em bytes, `sharp` nao
+conseguia abrir). Foi apagado por engano (`rm`, direto pelo terminal) achando que era
+descartavel; nao foi pra Lixeira do Windows (delete por linha de comando pula ela), e nao
+apareceu na Lixeira do OneDrive tambem. Sem conserto. Licao registrada aqui pra nao se
+repetir: **nunca apagar um arquivo que possa ser a unica copia sem antes achar de onde ele
+veio** — um `.jpg` do tamanho de um `.ARW` inteiro (~30 MB) e sinal de original renomeado,
+nao de foto ja processada.
+
 **O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
 existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de
 arquivos no painel do Pages; abrir o link no celular em rede móvel (não Wi-Fi); baixar uma

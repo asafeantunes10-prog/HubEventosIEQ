@@ -11,6 +11,7 @@
     "tipos:functions": "tsc --noEmit -p functions",
     "preview": "vite preview --host",
     "publicar": "node scripts/publicar.mjs",
+    "converter-raw": "node scripts/converter-raw.mjs",
     "arquivar": "node scripts/arquivar.mjs",
     "gerar-senha": "node scripts/gerar-senha.mjs",
     "migrar:local": "wrangler d1 migrations apply hub-eventos-ieq --local",

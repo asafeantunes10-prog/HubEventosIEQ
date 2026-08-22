@@ -156,12 +156,32 @@ function principal() {
 
   // Passo 2: copia so a tag de rotacao do .ARW pra dentro do .jpg que acabou
   // de nascer — e o passo que falta pra `publicar.mjs` girar a foto certo.
+  //
+  // `-TagsFromFile %d%f.ARW` TEM que vir antes de `-Orientation<Orientation`:
+  // sem ele, o exiftool tenta copiar a tag Orientation DE DENTRO DO PROPRIO
+  // jpg (que nao tem nenhuma) — nao da erro, so um aviso silencioso ("No
+  // writable tags set") que passa batido se ninguem checa a saida. Foi
+  // exatamente essa falta que deixou passar um lote inteiro sem girar uma
+  // vez — `%d%f` resolve pasta+nome do jpg sendo processado, so troca a
+  // extensao para achar o `.ARW` irmao ao lado dele.
   for (const lote of emLotes(comPrevia, TAMANHO_LOTE)) {
-    rodarExiftool([
+    const saida = rodarExiftool([
+      '-TagsFromFile',
+      '%d%f.ARW',
       '-Orientation<Orientation',
       '-overwrite_original',
       ...lote.map((p) => p.caminhoJpg),
     ])
+
+    // Rede de seguranca: se algum arquivo do lote nao recebeu a tag (ARW
+    // sumiu, renomeado, o que for), avisa em vez de deixar a foto seguir
+    // silenciosamente sem rotacao ate aparecer torta no site.
+    if (saida.includes('No writable tags set')) {
+      console.log(
+        '  aviso: pelo menos um arquivo deste lote nao recebeu a tag de rotacao ' +
+          '(o .ARW irmao pode ter sido movido/apagado) — confira o lote acima.'
+      )
+    }
   }
 
   console.log(`  ${comPrevia.length} convertidas com sucesso.`)

@@ -24,24 +24,38 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, params }) => {
     return Response.json({ erro: 'Endereco invalido.' }, { status: 400 })
   }
 
-  const evento = await env.BANCO.prepare(
-    `select id, slug, titulo, descricao, data_evento, capa_id, status, listado,
-            destaque, permite_zip, cor_destaque, layout, arquivado, total_fotos
-     from eventos where slug = ?1 and status = 'publicado'`
-  )
-    .bind(slug)
-    .first()
+  /*
+    As duas consultas iam uma depois da outra — cada `npm run publicar` de um
+    evento grande deixa isso visivel: dois RTTs ate o D1 em serie, quando as
+    fotos so precisam do slug (nao do id que a primeira consulta devolveria)
+    para serem buscadas via join. `batch()` manda as duas juntas numa unica
+    ida ao D1; a segunda so acha linhas se a primeira tambem achasse (mesmo
+    filtro `status = 'publicado'` repetido via o join), entao nao muda
+    resultado nenhum, so corta metade da latencia de rede desta rota.
+  */
+  const [resultadoEvento, resultadoFotos] = await env.BANCO.batch([
+    env.BANCO.prepare(
+      `select id, slug, titulo, descricao, data_evento, capa_id, status, listado,
+              destaque, permite_zip, cor_destaque, layout, arquivado, total_fotos
+       from eventos where slug = ?1 and status = 'publicado'`
+    ).bind(slug),
+    env.BANCO.prepare(
+      `select f.id, f.evento_id, f.caminho, f.nome_original, f.largura, f.altura,
+              f.lqip, f.ordem
+       from fotos f
+       join eventos e on e.id = f.evento_id
+       where e.slug = ?1 and e.status = 'publicado'
+       order by f.ordem`
+    ).bind(slug),
+  ])
+
+  const evento = resultadoEvento.results[0]
 
   if (!evento) {
     return Response.json({ erro: 'Nao encontrei esse evento.' }, { status: 404 })
   }
 
-  const { results: fotos } = await env.BANCO.prepare(
-    `select id, evento_id, caminho, nome_original, largura, altura, lqip, ordem
-     from fotos where evento_id = ?1 order by ordem`
-  )
-    .bind(evento.id)
-    .all()
+  const fotos = resultadoFotos.results
 
   return Response.json(
     { evento, fotos },

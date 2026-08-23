@@ -30,7 +30,23 @@ export function CartaoFoto({ foto, indice, temVersaoGrande, aoAbrir, aoBaixar }:
   const proporcao = foto.largura && foto.altura ? foto.largura / foto.altura : 2 / 3
 
   return (
-    <figure className="group relative mb-3 break-inside-avoid sm:mb-4">
+    <figure
+      className={cn(
+        'group relative mb-3 break-inside-avoid sm:mb-4',
+        /*
+          Numa galeria de 500+ fotos, o navegador monta layout e pintura de
+          CADA cartao no primeiro render — mesmo os que estao quilometros
+          abaixo da dobra. `content-visibility: auto` pula esse trabalho para
+          quem esta fora da tela, tratando como se nao existisse ate chegar
+          perto do scroll (o `loading="lazy"` da imagem la embaixo ja fazia
+          isso para a REDE; isto faz o mesmo para o CSS). `contain-intrinsic-
+          size` da um palpite de altura pro scroll nao pular quando o cartao
+          ainda nao foi medido — depois da primeira vez visivel, o navegador
+          lembra o tamanho real e para de usar o palpite.
+        */
+        '[content-visibility:auto] [contain-intrinsic-size:auto_320px]'
+      )}
+    >
       <button
         type="button"
         onClick={() => aoAbrir(indice)}

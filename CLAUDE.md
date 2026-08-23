@@ -294,6 +294,23 @@ repetir: **nunca apagar um arquivo que possa ser a unica copia sem antes achar d
 veio** — um `.jpg` do tamanho de um `.ARW` inteiro (~30 MB) e sinal de original renomeado,
 nao de foto ja processada.
 
+**Performance da grade com o evento cheio (537 fotos).** Depois do lote todo publicado, a
+tela de `diaconato-homens-2026` ficou lenta pra carregar e algumas fotos apareciam como "Não
+carregou". Conferido nos dois lados: `/api/eventos/:slug` responde em ~0,8s com 205 KB de
+JSON (razoavel — nao e o gargalo); e as 537 fotos, nas duas versoes (`-t` e `-g`), TODAS
+respondem 200 no site publicado (varredura completa, nao amostra) — ou seja, nao faltava
+nenhum arquivo, o "Não carregou" era o navegador desistindo de fotos fora de tela num DOM de
+537 cartoes, nao um 404 de verdade.
+
+Corrigido em `CartaoFoto.tsx`: `content-visibility: auto` + `contain-intrinsic-size` no
+`<figure>` de cada cartao. O `loading="lazy"` na imagem ja evitava 537 DOWNLOADS de uma vez
+(so baixa o que esta perto da tela); isto faz o mesmo pro CSS — o navegador pula layout e
+pintura dos cartoes fora de tela em vez de montar os 537 de uma vez so. `contain-intrinsic-
+size: auto 320px` da um palpite de altura pro scroll nao pular antes de cada cartao ser
+medido de verdade. `npm run build` e `lint` limpos; deploy conferido no dominio de producao
+(o novo CSS respondeu 200 depois de alguns segundos de propagacao — o mesmo soluço
+passageiro ja registrado antes, nao um erro).
+
 **O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
 existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de
 arquivos no painel do Pages; abrir o link no celular em rede móvel (não Wi-Fi); baixar uma

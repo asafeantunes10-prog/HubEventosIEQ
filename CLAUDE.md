@@ -311,18 +311,33 @@ medido de verdade. `npm run build` e `lint` limpos; deploy conferido no dominio 
 (o novo CSS respondeu 200 depois de alguns segundos de propagacao — o mesmo soluço
 passageiro ja registrado antes, nao um erro).
 
-**Glitch no celular, efeito colateral direto da otimizacao acima.** O `contain-intrinsic-
-size: auto 320px` usava um palpite de altura FIXO pra todo cartao, ignorando a proporcao real
-da foto. Cartao vertical e cartao horizontal tem alturas bem diferentes — ao rolar, cada
-cartao saltava do palpite errado (320px) pro tamanho real assim que entrava na zona
-renderizada do `content-visibility`, e como as fotos de um mesmo evento tendem a ter a mesma
-orientacao em sequencia (o mesmo fotografo, o mesmo angulo, foto apos foto), o salto se
-repetia visivelmente "corredor abaixo" — exatamente o que o Asafe descreveu. Corrigido em
-`CartaoFoto.tsx`: a altura do palpite agora usa a proporcao REAL de cada foto
-(`largura/altura`, ja gravada no banco) em vez de um numero fixo — `Math.round(300 /
-proporcao)`, 300px sendo uma largura de coluna tipica (nao precisa ser exata, so precisa
-chegar perto o bastante pro salto ficar pequeno demais pra notar). `npm run build` e `lint`
-limpos, deploy conferido.
+**Glitch no celular, efeito colateral direto da otimizacao acima — E A PRIMEIRA TENTATIVA DE
+CONSERTO NAO RESOLVEU.** Primeira hipotese: o `contain-intrinsic-size: auto 320px` usava um
+palpite de altura FIXO pra todo cartao, entao trocar pra um palpite baseado na proporcao real
+da foto (`Math.round(300 / proporcao)`) devia bastar. Nao bastou — o Asafe testou de novo e o
+glitch continuava identico. A causa de verdade e outra, mais funda: `content-visibility:
+auto` DENTRO de `columns` (o CSS que faz o mosaico, ver `GradeFotos.tsx`) e uma combinacao
+ruim custe o que custar o palpite. `columns` BALANCEIA a altura das colunas o tempo todo — e
+um cartao trocando de "oculto" pra "tamanho real" no meio do scroll faz o navegador
+recalcular esse balanco, o que pode mover cartoes JA VISTOS de coluna, nao so o de baixo.
+Nenhum palpite de altura consertava isso porque o problema nunca foi o TAMANHO do palpite, e
+sim o RECALCULO em si.
+
+Corrigido de verdade removendo `content-visibility` inteiro do `CartaoFoto.tsx` e trocando a
+estrategia: em vez de todo cartao existir no DOM e o navegador fingir que os de fora da tela
+nao existem, agora so um PEDACO das fotos entra no DOM de cada vez (`GradeFotos.tsx`, `PASSO
+= 60`). Um `IntersectionObserver` observa uma sentinela no fim da lista renderizada e libera
+mais 60 cartoes quando ela se aproxima da tela (`rootMargin: 1200px`, pra nunca aparecer
+vazio rolando rapido). Cartao que ja apareceu nunca muda de tamanho depois — so cresce o fim
+da lista — entao nao ha o que a balanceamento de colunas rebalancear pra tras. O reset da
+contagem ao trocar de evento e por `key={evento.slug}` no `GradeFotos` dentro de `Evento.tsx`
+(forca remontar, zera o estado sozinho) em vez de um `useEffect` — evitou repetir o mesmo
+aviso de lint que ja existe, documentado, em `Imagem.tsx`.
+
+`npm run build` e `lint` limpos (so os dois avisos permanentes de sempre). **Licao**: quando
+o Asafe disser "continua igual, nao mudou nada" depois de um conserto, leve a serio — nao
+assuma que foi cache ou que o ajuste so precisava ser mais fino. Pode ser sintoma de outra
+causa, e foi.
 
 **O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
 existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de

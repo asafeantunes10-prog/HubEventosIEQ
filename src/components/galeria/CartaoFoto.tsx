@@ -29,35 +29,8 @@ export function CartaoFoto({ foto, indice, temVersaoGrande, aoAbrir, aoBaixar }:
   */
   const proporcao = foto.largura && foto.altura ? foto.largura / foto.altura : 2 / 3
 
-  /*
-    Palpite de altura pro `content-visibility` (comentario logo abaixo)
-    respeitando a proporcao REAL de cada foto. Um numero fixo (ex.: 320px
-    pra qualquer foto) causava um glitch visivel: cartao vertical e cartao
-    horizontal tem alturas bem diferentes, entao ao entrar na tela o cartao
-    saltava do palpite errado pro tamanho real — foto "sobe e desce" antes
-    de assentar, rolando por um corredor inteiro (mesma proporcao, mesmo
-    erro, se repetindo cartao apos cartao). 300px e uma largura de coluna
-    tipica (nao precisa ser exata — so precisa estar perto o bastante pra o
-    salto ser pequeno demais pra notar).
-  */
-  const alturaEstimada = Math.round(300 / proporcao)
-
   return (
-    <figure
-      className="group relative mb-3 break-inside-avoid sm:mb-4"
-      style={{
-        /*
-          Numa galeria de 500+ fotos, o navegador monta layout e pintura de
-          CADA cartao no primeiro render — mesmo os que estao quilometros
-          abaixo da dobra. `content-visibility: auto` pula esse trabalho para
-          quem esta fora da tela, tratando como se nao existisse ate chegar
-          perto do scroll (o `loading="lazy"` da imagem la embaixo ja fazia
-          isso para a REDE; isto faz o mesmo para o CSS).
-        */
-        contentVisibility: 'auto',
-        containIntrinsicSize: `auto ${alturaEstimada}px`,
-      }}
-    >
+    <figure className="group relative mb-3 break-inside-avoid sm:mb-4">
       <button
         type="button"
         onClick={() => aoAbrir(indice)}

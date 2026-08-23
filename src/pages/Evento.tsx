@@ -175,6 +175,10 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
 
         <div className="mt-10">
           <GradeFotos
+            // Forca remontar ao trocar de evento — reseta sozinho a contagem
+            // de cartoes revelados (ver comentario em GradeFotos) sem precisar
+            // de um efeito so pra isso.
+            key={evento.slug}
             fotos={fotos}
             layout={evento.layout}
             temVersaoGrande={temVersaoGrande}

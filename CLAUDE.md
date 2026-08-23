@@ -311,6 +311,19 @@ medido de verdade. `npm run build` e `lint` limpos; deploy conferido no dominio 
 (o novo CSS respondeu 200 depois de alguns segundos de propagacao — o mesmo soluço
 passageiro ja registrado antes, nao um erro).
 
+**Glitch no celular, efeito colateral direto da otimizacao acima.** O `contain-intrinsic-
+size: auto 320px` usava um palpite de altura FIXO pra todo cartao, ignorando a proporcao real
+da foto. Cartao vertical e cartao horizontal tem alturas bem diferentes — ao rolar, cada
+cartao saltava do palpite errado (320px) pro tamanho real assim que entrava na zona
+renderizada do `content-visibility`, e como as fotos de um mesmo evento tendem a ter a mesma
+orientacao em sequencia (o mesmo fotografo, o mesmo angulo, foto apos foto), o salto se
+repetia visivelmente "corredor abaixo" — exatamente o que o Asafe descreveu. Corrigido em
+`CartaoFoto.tsx`: a altura do palpite agora usa a proporcao REAL de cada foto
+(`largura/altura`, ja gravada no banco) em vez de um numero fixo — `Math.round(300 /
+proporcao)`, 300px sendo uma largura de coluna tipica (nao precisa ser exata, so precisa
+chegar perto o bastante pro salto ficar pequeno demais pra notar). `npm run build` e `lint`
+limpos, deploy conferido.
+
 **O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
 existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de
 arquivos no painel do Pages; abrir o link no celular em rede móvel (não Wi-Fi); baixar uma

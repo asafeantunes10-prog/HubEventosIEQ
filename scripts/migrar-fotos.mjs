@@ -36,7 +36,17 @@
  *   npm run migrar-fotos -- --apagar-sem-arquivo (DESTRUTIVO: apaga do banco as fotos sem arquivo)
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, linkSync, copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  linkSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, resolve } from 'node:path'
 
 import { aspas, consultar, executar, executarEmLotes } from './d1.mjs'
@@ -227,8 +237,15 @@ async function principal() {
   }
 
   // ---- 2. deploy do projeto de fotos
-  const temporaria = resolve(RAIZ, '.migracao-fotos')
-  rmSync(temporaria, { recursive: true, force: true })
+  /*
+    A PASTA TEMPORARIA FICA FORA DO PROJETO, E O WRANGLER RODA DE DENTRO DELA.
+    O `wrangler pages deploy` procura `functions/` e `wrangler.toml` na pasta onde
+    esta rodando (e `wrangler.toml` tambem nas pastas acima). Rodando de dentro do
+    projeto, ele anexou ao projeto de fotos o codigo do servidor do site e a ligacao
+    com o banco — o que deveria ser so arquivos virou um segundo site. Fora do
+    projeto nao ha nada disso para achar.
+  */
+  const temporaria = mkdtempSync(resolve(tmpdir(), 'hub-fotos-'))
   mkdirSync(resolve(temporaria, 'fotos'), { recursive: true })
   writeFileSync(resolve(temporaria, '_headers'), CABECALHOS_FOTOS, 'utf8')
 
@@ -252,7 +269,7 @@ async function principal() {
   const r = spawnSync(
     process.execPath,
     [WRANGLER, 'pages', 'deploy', temporaria, `--project-name=${PROJETO_FOTOS}`, '--branch=main'],
-    { stdio: 'inherit', cwd: RAIZ }
+    { stdio: 'inherit', cwd: temporaria }
   )
   rmSync(temporaria, { recursive: true, force: true })
 

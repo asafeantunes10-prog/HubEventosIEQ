@@ -37,5 +37,3 @@ fotos
 .dev.vars
 .env*
 
-# Pasta temporaria do scripts/migrar-fotos.mjs
-.migracao-fotos/

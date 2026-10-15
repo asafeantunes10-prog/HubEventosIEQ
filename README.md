@@ -88,13 +88,19 @@ gratuitas e **sem cartão**:
 3. **Levar as fotos que já existem** para o projeto novo e passar o site a apontar para lá,
    nesta ordem (assim o site no ar nunca fica sem foto):
    ```bash
-   npm run migrar              # cria as colunas novas no banco de produção
-   npm run migrar-fotos        # leva fotos/ para eventos-ieq-fotos e grava os hashes
-   npm run implantar           # publica o site, já apontando para as fotos novas
+   npm run migrar                              # cria as colunas novas no banco de produção
+   npm run migrar-fotos -- --baixar-do-site    # leva as fotos para eventos-ieq-fotos e grava os hashes
+   npm run implantar                           # publica o site, já apontando para as fotos novas
    ```
 
-Depois disso `fotos/` não é mais usada. (`npm run migrar-fotos` só roda uma vez: depois que
-o painel recebe fotos ele se recusa a rodar de novo, para não apagá-las.)
+   O `--baixar-do-site` traz de `eventos-ieq.pages.dev` as fotos que não estiverem na pasta
+   `fotos/` deste computador (por exemplo, as de um evento que foi publicado de outro PC). Isso
+   só funciona **antes** do `npm run implantar`, porque é ele que substitui o site antigo.
+   Nunca use `--apagar-sem-arquivo` com um evento real: ele apaga as fotos do banco.
+
+Depois disso a pasta `fotos/` fica só como cópia de segurança. (`npm run migrar-fotos` só
+roda uma vez: depois que o painel recebe fotos ele se recusa a rodar de novo, para não
+apagá-las.)
 
 ## Arquivar um evento antigo
 

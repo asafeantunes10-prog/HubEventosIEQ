@@ -250,8 +250,15 @@ etapa 1 de "sem upload pelo navegador". Motivos e achados:
 1. `npx wrangler pages project create eventos-ieq-fotos --production-branch=main`
 2. Criar o token de API (Conta → Cloudflare Pages → Editar) e gravar `CF_API_TOKEN` e
    `CF_ACCOUNT_ID` com `wrangler pages secret put`.
-3. `npm run migrar` → `npm run migrar-fotos` → `npm run implantar`, **nessa ordem** (as fotos
-   passam a existir no projeto novo antes de o site apontar para lá).
+3. `npm run migrar` → `npm run migrar-fotos -- --baixar-do-site` → `npm run implantar`, **nessa
+   ordem** (as fotos passam a existir no projeto novo antes de o site apontar para lá).
+   **Achado ao rodar de verdade:** o banco de produção tem o evento real
+   `diaconato-homens-2026` (537 fotos, publicado de OUTRA máquina; 526 delas com `caminho` =
+   nome do arquivo, `IMG_0180`, de uma versão antiga do script) e um rascunho `teste` (3 fotos),
+   e a `fotos/` deste PC só tinha o evento de teste. O `migrar-fotos` recusou (como deve) e **o
+   `--apagar-sem-arquivo` teria apagado o evento real do banco** — nunca o use com evento real.
+   Os 540 × 2 arquivos continuam sendo servidos pelo site antigo (conferido um a um), então
+   `--baixar-do-site` os traz para `fotos/` — antes do `implantar`, que substitui o site.
 4. Testar de verdade: enviar uma pasta com RAW da FX30 e da Canon pelo painel e conferir a
    orientação das verticais (as amostras reais que testei eram todas horizontais; a vertical
    foi simulada). Abrir o painel num Mac/Safari, se houver um à mão.

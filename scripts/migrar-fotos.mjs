@@ -21,14 +21,23 @@
  *
  * Pode rodar de novo sem problema: recalcula os hashes e refaz o deploy.
  *
+ * E SE `fotos/` NAO TEM AS FOTOS DESTE COMPUTADOR?
+ * Aconteceu: o primeiro evento real foi publicado de outra maquina, e `fotos/`
+ * daqui so tinha o evento de teste. Os arquivos continuam sendo servidos pelo
+ * site no ar (que so deixa de te-los quando `npm run implantar` o substitui),
+ * entao `--baixar-do-site` os traz de la para `fotos/` — os mesmos bytes que os
+ * visitantes recebem hoje — e o resto da migracao segue normalmente. Isso so
+ * funciona ANTES do `implantar`; depois dele o site antigo deixa de existir.
+ *
  * Uso:
  *   npm run migrar-fotos
+ *   npm run migrar-fotos -- --baixar-do-site     (traz de eventos-ieq.pages.dev o que faltar em fotos/)
  *   npm run migrar-fotos -- --local              (banco de teste; nao faz o deploy)
- *   npm run migrar-fotos -- --apagar-sem-arquivo (apaga do banco as fotos sem arquivo)
+ *   npm run migrar-fotos -- --apagar-sem-arquivo (DESTRUTIVO: apaga do banco as fotos sem arquivo)
  */
 import { spawnSync } from 'node:child_process'
 import { existsSync, linkSync, copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 
 import { aspas, consultar, executar, executarEmLotes } from './d1.mjs'
 import { bytesParaBase64, hashPages } from '../src/lib/envio/hashPages.ts'
@@ -38,23 +47,89 @@ const RAIZ = resolve(import.meta.dirname, '..')
 const PASTA_FOTOS = resolve(RAIZ, 'fotos')
 const PROJETO_FOTOS = 'eventos-ieq-fotos'
 const URL_FOTOS = `https://${PROJETO_FOTOS}.pages.dev`
+/** O site no ar, que ainda serve as fotos antigas em `/fotos/...`. */
+const URL_SITE = 'https://eventos-ieq.pages.dev'
 const WRANGLER = resolve(RAIZ, 'node_modules', 'wrangler', 'bin', 'wrangler.js')
 
 const args = process.argv.slice(2)
 const local = args.includes('--local')
 const apagarSemArquivo = args.includes('--apagar-sem-arquivo')
+const baixarDoSite = args.includes('--baixar-do-site')
 const opcoes = { local }
 
 function hashDoArquivo(caminho) {
   return hashPages(bytesParaBase64(new Uint8Array(readFileSync(caminho))), 'webp')
 }
 
+/** Os arquivos que uma foto precisa ter: evento arquivado so tem a miniatura. */
+function arquivosDaFoto(foto) {
+  const sufixos = Number(foto.arquivado) === 1 ? ['t'] : ['t', 'g']
+  return sufixos.map((s) => ({
+    sufixo: s,
+    disco: resolve(PASTA_FOTOS, `${foto.caminho}-${s}.webp`),
+    url: `${URL_SITE}/fotos/${foto.caminho}-${s}.webp`,
+  }))
+}
+
+/**
+ * Baixa um arquivo do site no ar. So aceita o que realmente parece um WebP:
+ * uma pagina de erro salva como `.webp` entraria no deploy e viraria "foto
+ * quebrada" para todo mundo, sem ninguem notar.
+ */
+async function baixarDoSiteNoAr(arquivo) {
+  const resposta = await fetch(arquivo.url).catch(() => null)
+  if (!resposta || resposta.status !== 200) return false
+
+  const bytes = new Uint8Array(await resposta.arrayBuffer())
+  const riff = String.fromCharCode(...bytes.subarray(0, 4)) === 'RIFF'
+  const webp = String.fromCharCode(...bytes.subarray(8, 12)) === 'WEBP'
+  if (!riff || !webp) return false
+
+  mkdirSync(dirname(arquivo.disco), { recursive: true })
+  writeFileSync(arquivo.disco, bytes)
+  return true
+}
+
+/** Baixa o que falta, com poucas conexoes de cada vez, e conta o que nao veio. */
+async function trazerFaltantes(fotos) {
+  const faltando = fotos.flatMap((f) => arquivosDaFoto(f).filter((a) => !existsSync(a.disco)))
+  if (faltando.length === 0) return
+
+  console.log(`\n  Baixando ${faltando.length} arquivo(s) de ${URL_SITE} para fotos/ ...`)
+
+  let proximo = 0
+  let baixados = 0
+  const falhas = []
+
+  await Promise.all(
+    Array.from({ length: 8 }, async () => {
+      while (proximo < faltando.length) {
+        const arquivo = faltando[proximo++]
+        if (await baixarDoSiteNoAr(arquivo)) baixados++
+        else falhas.push(arquivo.url)
+        process.stdout.write(`\r  baixados: ${baixados}/${faltando.length}`)
+      }
+    })
+  )
+  process.stdout.write('\n')
+
+  if (falhas.length > 0) {
+    console.log(`  ${falhas.length} arquivo(s) nao vieram do site (nao existem la, ou deram erro).`)
+  }
+}
+
 async function principal() {
   console.log(`\n== Migrar fotos para o projeto "${PROJETO_FOTOS}"${local ? '  [banco local]' : ''} ==\n`)
 
   if (!existsSync(PASTA_FOTOS)) {
-    console.error('  Nao achei a pasta fotos/ nesta maquina. Rode isto no computador onde ela mora.\n')
-    process.exit(1)
+    if (!baixarDoSite) {
+      console.error(
+        '  Nao achei a pasta fotos/ nesta maquina. Rode isto no computador onde ela mora, ou\n' +
+          '  use --baixar-do-site para trazer as fotos do site no ar.\n'
+      )
+      process.exit(1)
+    }
+    mkdirSync(PASTA_FOTOS, { recursive: true })
   }
 
   /*
@@ -82,6 +157,8 @@ async function principal() {
     opcoes
   )
   console.log(`  ${fotos.length} fotos no banco.`)
+
+  if (baixarDoSite) await trazerFaltantes(fotos)
 
   // ---- 1. hashes
   const comHash = []
@@ -116,10 +193,13 @@ async function principal() {
 
     if (!apagarSemArquivo) {
       console.log(
-        '\n  Essas fotos ja aparecem quebradas no site hoje. Sem hash, o painel recusa publicar\n' +
-          '  (apagaria elas do ar). Duas saidas:\n' +
-          '    - restaure a pasta fotos/ de um backup e rode de novo; ou\n' +
-          '    - rode de novo com --apagar-sem-arquivo para tirar essas linhas do banco.\n'
+        '\n  NADA FOI APAGADO nem publicado. Sem o arquivo nao ha hash, e sem hash o painel recusa\n' +
+          '  publicar (o deploy apagaria essas fotos do ar). Saidas, da mais segura para a menos:\n' +
+          '    - se o site no ar AINDA mostra essas fotos: rode de novo com --baixar-do-site\n' +
+          '      (precisa ser antes do `npm run implantar`);\n' +
+          '    - restaure a pasta fotos/ de um backup e rode de novo;\n' +
+          '    - so se as fotos realmente nao existem mais: --apagar-sem-arquivo. ISSO APAGA AS\n' +
+          '      LINHAS DO BANCO e nao tem volta; nunca use com um evento real na lista acima.\n'
       )
       process.exit(1)
     }

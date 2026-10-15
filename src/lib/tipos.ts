@@ -63,7 +63,7 @@ export type EventoComFotos = {
  * `capa` vem de `capa_id` quando o evento tem uma escolhida, ou da primeira
  * foto (menor `ordem`) quando ninguem escolheu ainda. `null` so acontece num
  * evento publicado sem nenhuma foto — caso raro, mas possivel entre criar o
- * evento e rodar o primeiro `npm run publicar`.
+ * evento e enviar a primeira foto.
  */
 export type EventoComCapa = Evento & {
   capa: Pick<Foto, 'caminho' | 'lqip' | 'largura' | 'altura'> | null

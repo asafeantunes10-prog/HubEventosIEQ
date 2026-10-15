@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Check, ChevronLeft, Loader2, TriangleAlert } from 'lucide-react'
+import { Archive, Check, ChevronLeft, Loader2, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -8,8 +8,22 @@ import { CamposEvento, type ValoresCamposEvento } from '@/components/admin/Campo
 import { GerenciarFotos } from '@/components/admin/GerenciarFotos'
 import { DialogApagarEvento } from '@/components/admin/DialogApagarEvento'
 import { ErroApi } from '@/lib/api'
-import { apagarEvento, atualizarEvento, buscarEventoAdmin, reordenarFotos } from '@/lib/apiAdmin'
-import type { Evento, Foto } from '@/lib/tipos'
+import {
+  apagarEvento,
+  apagarFotos,
+  atualizarEvento,
+  buscarEventoAdmin,
+  publicarFotos,
+  reordenarFotos,
+  type FotoAdmin,
+} from '@/lib/apiAdmin'
+import type { Evento } from '@/lib/tipos'
+
+// Carregado so quando alguem abre esta tela: leva junto o codificador de WebP e o
+// leitor de EXIF, que o site publico nunca precisa baixar.
+const EnviarFotos = React.lazy(() =>
+  import('@/components/admin/EnviarFotos').then((m) => ({ default: m.EnviarFotos }))
+)
 
 type EstadoCarga =
   | { tipo: 'carregando' }
@@ -32,7 +46,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
 
   const [estadoCarga, setEstadoCarga] = React.useState<EstadoCarga>({ tipo: 'carregando' })
   const [evento, setEvento] = React.useState<Evento | null>(null)
-  const [fotos, setFotos] = React.useState<Foto[]>([])
+  const [fotos, setFotos] = React.useState<FotoAdmin[]>([])
 
   const [valores, setValores] = React.useState<ValoresCamposEvento>({
     titulo: '',
@@ -49,6 +63,8 @@ function PaginaEditar({ id }: { id: string | undefined }) {
   const [salvo, setSalvo] = React.useState(false)
   const [erroSalvar, setErroSalvar] = React.useState<string | null>(null)
   const [alternandoStatus, setAlternandoStatus] = React.useState(false)
+  // Mensagem enquanto o site e atualizado depois de apagar foto ou arquivar.
+  const [atualizandoSite, setAtualizandoSite] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (!id) return
@@ -165,10 +181,68 @@ function PaginaEditar({ id }: { id: string | undefined }) {
     }
   }
 
+  /** Recarrega as fotos (e a capa) depois de um envio, sem mexer no formulario. */
+  const recarregarFotos = React.useCallback(() => {
+    if (!id) return
+    buscarEventoAdmin(id)
+      .then(({ evento: e, fotos: f }) => {
+        setEvento(e)
+        setFotos(f)
+      })
+      .catch(() => {
+        // Falhou so a atualizacao da lista; a tela continua mostrando a anterior.
+      })
+  }, [id])
+
+  const aoApagarFoto = async (fotoId: string) => {
+    if (!evento) return
+    if (!window.confirm('Apagar esta foto do evento? Ela sai do site em alguns segundos.')) return
+
+    const anteriores = fotos
+    setFotos(fotos.filter((f) => f.id !== fotoId)) // otimista: some da grade na hora
+    setAtualizandoSite('Tirando a foto do ar…')
+
+    try {
+      await apagarFotos(evento.id, [fotoId])
+      // O arquivo so sai do ar com um novo deploy do projeto de fotos.
+      await publicarFotos()
+    } catch (e) {
+      setFotos(anteriores)
+      window.alert(e instanceof Error ? e.message : 'Não consegui apagar a foto.')
+    } finally {
+      setAtualizandoSite(null)
+      recarregarFotos()
+    }
+  }
+
+  const aoArquivar = async () => {
+    if (!evento) return
+    const ok = window.confirm(
+      'Arquivar libera espaço no site: as versões grandes das fotos saem do ar e ficam só as ' +
+        'miniaturas. O download deste evento deixa de funcionar e NÃO dá para desfazer por aqui ' +
+        '(só enviando as fotos de novo). Continuar?'
+    )
+    if (!ok) return
+
+    setAtualizandoSite('Arquivando o evento…')
+    try {
+      // Primeiro o banco (as telas passam a usar so a miniatura), depois o deploy que tira o arquivo.
+      setEvento(await atualizarEvento(evento.id, { arquivado: true }))
+      await publicarFotos()
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Não consegui arquivar o evento.')
+    } finally {
+      setAtualizandoSite(null)
+      recarregarFotos()
+    }
+  }
+
   const aoApagar = async () => {
     if (!evento) return
     try {
       await apagarEvento(evento.id)
+      // Sem este deploy as fotos do evento apagado continuariam no ar.
+      if (fotos.length > 0) await publicarFotos().catch(() => {})
       navegar('/admin')
     } catch (e) {
       window.alert(e instanceof Error ? e.message : 'Não consegui apagar o evento.')
@@ -309,20 +383,80 @@ function PaginaEditar({ id }: { id: string | undefined }) {
       </form>
 
       <section className="mt-10">
+        <h2 className="font-heading text-xl text-champanhe-claro">Enviar fotos</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Escolha as fotos ou a pasta do evento. Enviar a mesma pasta de novo é seguro: o que já foi
+          enviado é pulado.
+        </p>
+        <div className="mt-4">
+          {evento.arquivado ? (
+            <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Este evento está arquivado, então não recebe fotos novas.
+            </p>
+          ) : (
+            <React.Suspense
+              fallback={
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Preparando o envio…
+                </div>
+              }
+            >
+              <EnviarFotos eventoId={evento.id} fotosAtuais={fotos} aoTerminar={recarregarFotos} />
+            </React.Suspense>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-10">
         <h2 className="font-heading text-xl text-champanhe-claro">
           Fotos <span className="text-base font-normal text-muted-foreground">({fotos.length})</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Reordene com as setas e clique em "Definir capa" na foto que deve aparecer na home.
         </p>
+        {atualizandoSite && (
+          <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground" role="status">
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            {atualizandoSite}
+          </p>
+        )}
         <div className="mt-4">
           <GerenciarFotos
             fotos={fotos}
             capaId={evento.capaId}
             aoMoverFoto={(indice, direcao) => void aoMoverFoto(indice, direcao)}
             aoDefinirCapa={(fotoId) => void aoDefinirCapa(fotoId)}
+            aoApagarFoto={(fotoId) => void aoApagarFoto(fotoId)}
           />
         </div>
+
+        {!evento.arquivado && fotos.length > 0 && (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4">
+            <div className="text-sm">
+              <p className="font-medium text-foreground">Arquivar evento</p>
+              <p className="text-muted-foreground">
+                Para eventos antigos: libera espaço no site mantendo só as miniaturas.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void aoArquivar()}
+              disabled={atualizandoSite !== null}
+            >
+              <Archive className="size-4" aria-hidden />
+              Arquivar
+            </Button>
+          </div>
+        )}
+        {evento.arquivado && (
+          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Archive className="size-4" aria-hidden />
+            Evento arquivado: só as miniaturas estão no ar e o download está desligado.
+          </p>
+        )}
       </section>
 
       <section className="mt-12 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-destructive/30 p-5">

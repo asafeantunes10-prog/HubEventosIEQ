@@ -8,9 +8,9 @@ type Props = {
   fotos: Foto[]
   indice: number
   /**
-   * `false` num evento arquivado — a versao -g (2048px) foi apagada do disco
-   * (ver `scripts/arquivar.mjs`) para liberar arquivos do teto do plano
-   * gratuito. Sem isto, a foto em tela cheia viria quebrada: a versao -t
+   * `false` num evento arquivado — a versao -g (2048px) saiu do ar (o deploy
+   * do projeto de fotos a omite, ver `functions/lib/publicacao.ts`) para
+   * liberar arquivos do teto do plano gratuito. Sem isto, a foto em tela cheia viria quebrada: a versao -t
    * (400px) que sobrou vira o melhor tamanho disponivel, e o botao de baixar
    * some, porque o arquivo que ele baixaria nao existe mais.
    */

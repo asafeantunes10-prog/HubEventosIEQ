@@ -1,35 +1,38 @@
 import * as React from 'react'
-import { ChevronDown, ChevronUp, ImageOff, Star } from 'lucide-react'
+import { ChevronDown, ChevronUp, Clock, ImageOff, Star, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { urlFoto } from '@/lib/fotos'
-import type { Foto } from '@/lib/tipos'
+import type { FotoAdmin } from '@/lib/apiAdmin'
 
 type Props = {
   /** Ja na ordem correta — quem chama e responsavel por manter isso. */
-  fotos: Foto[]
+  fotos: FotoAdmin[]
   capaId: string | null
   aoMoverFoto: (indice: number, direcao: -1 | 1) => void
   aoDefinirCapa: (fotoId: string) => void
+  aoApagarFoto: (fotoId: string) => void
 }
 
 /**
- * Grade de gerenciamento das fotos ja publicadas: reordenar e escolher a
- * capa. NAO faz upload — fotos chegam pelo `npm run publicar`; aqui so se
- * organiza o que ja esta la.
+ * Grade de gerenciamento das fotos do evento: reordenar, escolher a capa e
+ * apagar. O envio de fotos novas fica em `EnviarFotos.tsx`.
+ *
+ * Uma foto recem-enviada ainda nao esta no ar (o deploy leva alguns segundos):
+ * aparece aqui como "aguardando", sem tentar carregar uma imagem que ainda nao
+ * existe.
  *
  * Reordenar e por BOTAO (subir/descer), nao arrastar. Drag-and-drop e
  * notoriamente ruim no toque de celular — e e justamente de celular que o
  * plano pede para o painel funcionar — e os botoes chegam ao mesmo resultado
  * sem precisar de uma biblioteca de gestos.
  */
-export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa }: Props) {
+export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa, aoApagarFoto }: Props) {
   if (fotos.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        Nenhuma foto ainda. Publique pelo terminal com{' '}
-        <code className="rounded bg-muted px-1 py-0.5">npm run publicar</code>.
+        Nenhuma foto ainda. Use o envio acima para adicionar.
       </p>
     )
   }
@@ -64,15 +67,28 @@ export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa }: Pr
               </Button>
             </div>
 
-            <Button
-              type="button"
-              size="xs"
-              variant={foto.id === capaId ? 'secondary' : 'ghost'}
-              onClick={() => aoDefinirCapa(foto.id)}
-              disabled={foto.id === capaId}
-            >
-              {foto.id === capaId ? 'É a capa' : 'Definir capa'}
-            </Button>
+            <div className="flex items-center gap-0.5">
+              <Button
+                type="button"
+                size="xs"
+                variant={foto.id === capaId ? 'secondary' : 'ghost'}
+                onClick={() => aoDefinirCapa(foto.id)}
+                // Uma foto que ainda nao esta no ar nao pode ser capa: a home
+                // mostraria imagem quebrada ate o deploy terminar.
+                disabled={foto.id === capaId || foto.situacao !== 'no-ar'}
+              >
+                {foto.id === capaId ? 'É a capa' : 'Definir capa'}
+              </Button>
+              <Button
+                type="button"
+                size="icon-xs"
+                variant="ghost"
+                onClick={() => aoApagarFoto(foto.id)}
+                aria-label={`Apagar a foto ${indice + 1}`}
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+              </Button>
+            </div>
           </div>
         </li>
       ))}
@@ -80,7 +96,7 @@ export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa }: Pr
   )
 }
 
-function MiniaturaFoto({ foto, ehCapa }: { foto: Foto; ehCapa: boolean }) {
+function MiniaturaFoto({ foto, ehCapa }: { foto: FotoAdmin; ehCapa: boolean }) {
   const [falhou, setFalhou] = React.useState(false)
 
   return (
@@ -90,7 +106,12 @@ function MiniaturaFoto({ foto, ehCapa }: { foto: Foto; ehCapa: boolean }) {
         ehCapa && 'ring-primary'
       )}
     >
-      {falhou ? (
+      {foto.situacao !== 'no-ar' ? (
+        <span className="flex size-full flex-col items-center justify-center gap-1 text-muted-foreground">
+          <Clock className="size-5" aria-hidden />
+          <span className="text-[0.65rem]">Aguardando publicação</span>
+        </span>
+      ) : falhou ? (
         <span className="flex size-full items-center justify-center">
           <ImageOff className="size-5 text-muted-foreground/40" aria-hidden />
         </span>

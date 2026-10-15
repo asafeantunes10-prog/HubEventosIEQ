@@ -26,11 +26,26 @@ export default defineConfig({
         1. Observar milhares de arquivos consome descritores a toa; o site nao
            le nenhum deles em desenvolvimento pelo disco, e sim pela URL.
         2. No Windows o arquivo continua travado durante a gravacao: o
-           observador do Vite morre com EBUSY ao tentar abrir uma foto que o
-           `npm run publicar` ainda esta escrevendo, e leva o servidor junto.
+           observador do Vite morre com EBUSY ao tentar abrir uma foto que ainda
+           esta sendo escrita, e leva o servidor junto.
       */
       ignored: ['**/fotos/**'],
     },
+  },
+
+  /*
+    O codificador de WebP (@jsquash/webp) e o leitor de RAW (LibRaw) acham o
+    proprio .wasm por `new URL('x.wasm', import.meta.url)`. O pre-empacotamento
+    de dependencias do modo dev reescreveria esse caminho e o arquivo deixaria de
+    ser encontrado; fora dele o Vite o trata como asset, no dev e no build.
+  */
+  optimizeDeps: {
+    exclude: ['@jsquash/webp', '@colorhythm/libraw-wasm'],
+  },
+
+  // Os workers do envio de fotos usam `import()` dinamico (RAW so quando preciso).
+  worker: {
+    format: 'es',
   },
 
   build: {

@@ -86,7 +86,7 @@ async function principal() {
   console.log(`  > ${hash}\n`)
   console.log(`  npx wrangler pages secret put SESSAO_SEGREDO --project-name=${PROJETO_PAGES}`)
   console.log(`  > ${segredo}\n`)
-  console.log('Depois de rodar os dois, publique de novo (npm run publicar) para o login valer.\n')
+  console.log('Depois de rodar os dois, publique o site de novo (npm run implantar) para o login valer.\n')
 }
 
 principal()

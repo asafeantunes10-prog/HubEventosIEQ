@@ -11,6 +11,9 @@ import type { Env } from '../../tipos'
  * `listado = 0` continua respondendo aqui; ele so nao aparece na lista de
  * `eventos.ts`. E assim que "so quem tem o link" funciona.
  *
+ * So as fotos `no_ar = 1`: as que o painel acabou de registrar ficam escondidas
+ * ate o deploy delas terminar (ver `functions/lib/publicacao.ts`).
+ *
  * Sem paginacao de proposito: as fotos sao arquivos estaticos, entao nao ha
  * quota de requisicao para economizar despejando 500 registros JSON de uma vez
  * (isso pesava quando a leitura passava por uma Function com R2 atras; aqui a
@@ -38,7 +41,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env, params }) => {
 
   const { results: fotos } = await env.BANCO.prepare(
     `select id, evento_id, caminho, nome_original, largura, altura, lqip, ordem
-     from fotos where evento_id = ?1 order by ordem`
+     from fotos where evento_id = ?1 and no_ar = 1 order by ordem`
   )
     .bind(evento.id)
     .all()

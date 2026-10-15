@@ -22,10 +22,12 @@ name = "eventos-ieq"
 compatibility_date = "2026-08-20"
 pages_build_output_dir = "dist"
 
-# Os metadados dos eventos e das fotos. Ver `migrations/0001_inicial.sql`.
+# Os metadados dos eventos e das fotos. Ver `migrations/`.
 #
-# As IMAGENS nao passam por aqui nem por Function nenhuma: elas sao servidas
-# como assets estaticos em `/fotos/...`, onde requisicao e gratis e ilimitada.
+# As IMAGENS nao passam por aqui nem por Function nenhuma: moram num SEGUNDO
+# projeto Pages (`eventos-ieq-fotos`), so de arquivos estaticos, onde requisicao
+# e gratis e ilimitada. As Functions so o ATUALIZAM, pela API do Cloudflare — ver
+# `functions/lib/paginasApi.ts`.
 [[d1_databases]]
 binding = "BANCO"
 database_name = "hub-eventos-ieq"
@@ -40,3 +42,10 @@ migrations_dir = "migrations"
 # as duas pecas que ela precisa (SENHA_HASH, SESSAO_SEGREDO) sao SECRETS, nao
 # vars: configuradas por `wrangler pages secret put` e `scripts/gerar-senha.mjs`,
 # nunca escritas neste arquivo nem versionadas. Ver `functions/api/admin/_middleware.ts`.
+
+# O envio de fotos pelo painel tambem usa dois SECRETS (nunca escritos aqui):
+#   CF_API_TOKEN    token da API com a permissao "Cloudflare Pages: Editar"
+#   CF_ACCOUNT_ID   identificador da conta
+# Sem eles, `/api/admin/armazenamento/*` responde 503. Como criar: README.md,
+# secao "Configurar o envio de fotos". Para testar sem tocar na conta real, o
+# `.dev.vars` aceita ainda `CF_API_BASE`, que aponta a API para um servidor local.

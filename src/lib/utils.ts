@@ -40,12 +40,12 @@ const ACENTOS_COMBINANTES = new RegExp(
 )
 
 /**
- * Mesmo algoritmo de `paraSlug()` em `scripts/publicar.mjs`. Os dois PRECISAM
- * concordar: e assim que um evento criado aqui no painel (com este slug) e o
- * MESMO evento que o script encontra quando alguem roda `npm run publicar`
- * sobre uma pasta de mesmo nome — sem essa concordancia, cada lado criaria um
- * evento diferente para a mesma coisa, e as fotos cairiam num evento vazio
- * enquanto o outro ficava sem fotos.
+ * Transforma "Culto de Jovens 2026" em "culto-de-jovens-2026": o endereco
+ * publico do evento (`/e/culto-de-jovens-2026`) e o prefixo das fotos dele no
+ * projeto de fotos.
+ *
+ * O slug precisa seguir a regra que `functions/api/admin/eventos.ts` valida
+ * (`SLUG_VALIDO`): letras minusculas, numeros e hifen.
  */
 export function paraSlug(texto: string): string {
   return texto

@@ -16,25 +16,25 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
        coalesce(capa.caminho, primeira.caminho) as capa_caminho,
        coalesce(capa.lqip, primeira.lqip)       as capa_lqip
      from eventos e
-     left join fotos capa on capa.id = e.capa_id
+     left join fotos capa on capa.id = e.capa_id and capa.no_ar = 1
      left join fotos primeira
        on primeira.evento_id = e.id
-      and primeira.ordem = (select min(ordem) from fotos where evento_id = e.id)
+      and primeira.no_ar = 1
+      and primeira.ordem = (select min(ordem) from fotos where evento_id = e.id and no_ar = 1)
      order by e.criado_em desc`
   ).all()
 
   return Response.json(results)
 }
 
-/** Letras minusculas, numeros e hifen — o mesmo formato que `scripts/publicar.mjs` gera. */
+/** Letras minusculas, numeros e hifen — o mesmo formato que `paraSlug` (src/lib/utils.ts) gera. */
 const SLUG_VALIDO = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 /**
  * POST /api/admin/eventos — cria um evento vazio (sem fotos ainda).
  *
- * Serve para preparar a pagina ANTES do `npm run publicar` rodar — titulo,
- * descricao, data, cor. Quando o script publicar fotos com este slug, ele
- * encontra o evento pelo slug (nao cria um segundo) e so acrescenta as fotos.
+ * Serve para preparar a pagina ANTES de enviar as fotos — titulo, descricao,
+ * data, cor. As fotos entram depois, pela tela de edicao do evento.
  */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   let corpo: Record<string, unknown>

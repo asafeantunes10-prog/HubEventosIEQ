@@ -2,8 +2,8 @@
  * O UNICO lugar do codigo que sabe de onde vem uma foto.
  *
  * As fotos nao moram num servico de armazenamento: elas sao ARQUIVOS ESTATICOS
- * do proprio site, publicados junto com ele em `/fotos/...`. Isso decide o
- * projeto inteiro, e por dois motivos:
+ * de um projeto Pages (ver `BASE` abaixo). Isso decide o projeto inteiro, e por
+ * dois motivos:
  *
  *   1. Nao exige cartao de credito. O R2 exige, mesmo no plano gratuito — e
  *      cartao nao e uma opcao aqui.
@@ -33,8 +33,22 @@ export type TamanhoFoto =
   /** 2048px, ~450 KB — o visualizador, o download e o ZIP. */
   | 'g'
 
-/** Prefixo dos assets. Bate com a pasta `fotos/`, que o script popula. */
-const BASE = '/fotos'
+/**
+ * Onde as fotos moram: um SEGUNDO projeto Pages, so de arquivos estaticos.
+ *
+ * Fica separado do site porque a unica forma de uma foto nova entrar no ar sem o
+ * PC do Asafe e um deploy feito por API (o painel de envio), e um deploy por API
+ * nao leva o codigo das Functions — se as fotos estivessem no projeto do site,
+ * esse deploy derrubaria o servidor. Ver `functions/lib/paginasApi.ts`.
+ *
+ * E UMA CONSTANTE SO, de proposito: as Functions tambem importam este arquivo
+ * (o `og:image` do `functions/_middleware.ts`), entao nao ha variavel de ambiente
+ * para ficar fora de sincronia entre o navegador e o servidor.
+ *
+ * Como a origem e outra, `fetch` das fotos (ZIP, download avulso) depende do
+ * CORS que o projeto de fotos libera no `_headers` dele. `<img>` nao precisa.
+ */
+const BASE = 'https://eventos-ieq-fotos.pages.dev/fotos'
 
 export function urlFoto(caminho: string, tamanho: TamanhoFoto): string {
   return `${BASE}/${caminho}-${tamanho}.webp`

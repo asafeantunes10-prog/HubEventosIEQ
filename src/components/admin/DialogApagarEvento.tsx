@@ -23,11 +23,10 @@ type Props = {
 /**
  * A confirmacao de "apagar evento", reusada na lista e na tela de edicao.
  *
- * O texto e o ponto mais importante deste componente, nao o botao: "apagar"
- * aqui e apagar o REGISTRO no banco, nao os arquivos. Sem deixar isso claro
- * ANTES do clique de confirmar, alguem apagaria um evento achando que as fotos
- * tambem sumiram do site — e elas continuam la ate o proximo
- * `npm run publicar` de qualquer evento reconstruir o `dist/`.
+ * O texto e o ponto mais importante deste componente, nao o botao: apagar um
+ * evento tira a pagina E as fotos do ar, e nao tem volta pelo painel. As
+ * fotos originais da equipe (RAW/JPEG) nao sao tocadas — so as versoes que o
+ * site guardava.
  */
 export function DialogApagarEvento({ titulo, totalFotos, aoConfirmar, variante = 'icon' }: Props) {
   const [aberto, setAberto] = React.useState(false)
@@ -51,9 +50,9 @@ export function DialogApagarEvento({ titulo, totalFotos, aoConfirmar, variante =
           <DialogTitle>Apagar "{titulo}"?</DialogTitle>
           <DialogDescription>
             Isso remove o evento e {totalFotos === 0 ? 'suas fotos' : `suas ${totalFotos} ${totalFotos === 1 ? 'foto' : 'fotos'}`}{' '}
-            do banco de dados — a página deixa de existir. As fotos em si NÃO são apagadas do
-            disco nem do site publicado: elas continuam ocupando espaço até alguém apagar a
-            pasta correspondente em <code>fotos/</code> e publicar de novo.
+            do site — a página deixa de existir e as fotos saem do ar em alguns segundos. Não dá
+            para desfazer por aqui. Seus arquivos originais (RAW e JPEG) não são tocados, então
+            é possível enviar as fotos de novo depois.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

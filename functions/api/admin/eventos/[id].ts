@@ -172,13 +172,10 @@ export const onRequestPatch: PagesFunction<Env> = async ({ request, env, params 
  * DELETE /api/admin/eventos/:id
  *
  * Apaga o evento e, em cascata (`on delete cascade` no schema), as linhas de
- * `fotos`. NAO apaga arquivo nenhum: os `.webp` continuam em `fotos/<slug>/`
- * no disco do Asafe e, ate o proximo `npm run publicar` de QUALQUER evento
- * reconstruir e reimplantar o `dist/`, continuam servidos pelo site no ar —
- * `popularDistComFotos()` espelha a pasta `fotos/` inteira, sem olhar o banco.
- *
- * A tela precisa deixar isso claro ANTES de confirmar (ver o dialogo em
- * `PainelEventos.tsx`): "apagar" aqui e apagar o REGISTRO, nao o material.
+ * `fotos`. Os arquivos continuam no ar ate o proximo deploy do projeto de
+ * fotos: o manifesto e montado do banco (ver `functions/lib/publicacao.ts`),
+ * entao quem chama isto em seguida chama `armazenamento/publicar` e as fotos
+ * saem do ar de verdade. A tela faz as duas chamadas (`PainelEventos.tsx`).
  */
 export const onRequestDelete: PagesFunction<Env> = async ({ env, params }) => {
   const id = params.id

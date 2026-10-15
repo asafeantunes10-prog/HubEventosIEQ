@@ -18,8 +18,8 @@ const VALORES_INICIAIS: ValoresCamposEvento = {
 
 /**
  * Cria um evento vazio — sem fotos ainda. Serve para preparar titulo,
- * descricao e data ANTES do `npm run publicar` rodar, ou simplesmente para ter
- * o endereco pronto para divulgar.
+ * descricao e data ANTES de enviar as fotos, ou simplesmente para ter o
+ * endereco pronto para divulgar. As fotos entram na tela de edicao do evento.
  *
  * O slug segue o titulo automaticamente ATE a pessoa editar o campo na mao —
  * dai para em diante o automatico para, porque ela decidiu um valor proprio.
@@ -104,9 +104,7 @@ export function NovoEvento() {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Precisa ser IGUAL ao nome da pasta que for para o{' '}
-            <code className="rounded bg-muted px-1 py-0.5">npm run publicar</code> — é assim
-            que o script encontra este evento em vez de criar um segundo.
+            É o endereço do evento no site (<code>/e/…</code>). Depois de criado, não muda.
           </p>
         </div>
 

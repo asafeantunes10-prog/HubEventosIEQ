@@ -4,7 +4,13 @@ import { ImageOff, Loader2, Pencil, Plus, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DialogApagarEvento } from '@/components/admin/DialogApagarEvento'
-import { apagarEvento, atualizarEvento, listarEventosAdmin, type EventoAdmin } from '@/lib/apiAdmin'
+import {
+  apagarEvento,
+  atualizarEvento,
+  listarEventosAdmin,
+  publicarFotos,
+  type EventoAdmin,
+} from '@/lib/apiAdmin'
 import { urlFoto } from '@/lib/fotos'
 import { cn, formatarData } from '@/lib/utils'
 
@@ -78,6 +84,8 @@ export function PainelEventos() {
           ? { tipo: 'pronto', eventos: atual.eventos.filter((e) => e.id !== evento.id) }
           : atual
       )
+      // Sem este deploy as fotos do evento apagado continuariam no ar.
+      if (evento.totalFotos > 0) await publicarFotos().catch(() => {})
     } catch (e) {
       window.alert(e instanceof Error ? e.message : 'Não consegui apagar o evento.')
     }

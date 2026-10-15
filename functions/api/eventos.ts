@@ -9,8 +9,10 @@ import type { Env } from '../tipos'
  * A capa vem de duas fontes, na ordem: a foto escolhida em `capa_id`, ou, se
  * ninguem escolheu ainda, a primeira foto do evento (menor `ordem`). Sem esse
  * `coalesce`, todo evento recem-criado apareceria sem imagem na home ate
- * alguem abrir o painel e escolher uma capa — que nem existe enquanto a etapa
- * 5 nao chega.
+ * alguem abrir o painel e escolher uma capa.
+ *
+ * So conta foto `no_ar = 1`: uma registrada e ainda sem deploy apontaria para
+ * um arquivo que nao existe, e a home mostraria imagem quebrada.
  */
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const { results } = await env.BANCO.prepare(
@@ -22,10 +24,11 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
        coalesce(capa.largura, primeira.largura)   as capa_largura,
        coalesce(capa.altura, primeira.altura)     as capa_altura
      from eventos e
-     left join fotos capa on capa.id = e.capa_id
+     left join fotos capa on capa.id = e.capa_id and capa.no_ar = 1
      left join fotos primeira
        on primeira.evento_id = e.id
-      and primeira.ordem = (select min(ordem) from fotos where evento_id = e.id)
+      and primeira.no_ar = 1
+      and primeira.ordem = (select min(ordem) from fotos where evento_id = e.id and no_ar = 1)
      where e.status = 'publicado' and e.listado = 1
      order by e.destaque desc, e.data_evento desc`
   ).all()

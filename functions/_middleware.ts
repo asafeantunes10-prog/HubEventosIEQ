@@ -82,10 +82,11 @@ async function reescreverParaEvento(
     `select e.titulo, e.descricao, e.arquivado,
             coalesce(capa.caminho, primeira.caminho) as capa_caminho
      from eventos e
-     left join fotos capa on capa.id = e.capa_id
+     left join fotos capa on capa.id = e.capa_id and capa.no_ar = 1
      left join fotos primeira
        on primeira.evento_id = e.id
-      and primeira.ordem = (select min(ordem) from fotos where evento_id = e.id)
+      and primeira.no_ar = 1
+      and primeira.ordem = (select min(ordem) from fotos where evento_id = e.id and no_ar = 1)
      where e.slug = ?1 and e.status = 'publicado'`
   )
     .bind(slug)
@@ -100,9 +101,13 @@ async function reescreverParaEvento(
 
   const tituloPagina = `${evento.titulo} — Fotos dos Eventos IEQ`
   const descricaoPagina = evento.descricao?.trim() || 'Veja e baixe as fotos deste evento.'
-  // Evento arquivado: a versao -g da capa foi apagada (ver `scripts/arquivar.mjs`).
-  // A miniatura -t e menor do que o ideal para uma previa, mas e a unica que
-  // ainda existe — bem melhor que a imagem quebrada que um 404 causaria.
+  // Evento arquivado: a versao -g da capa foi retirada do ar (o manifesto do
+  // deploy a omite — ver `functions/lib/publicacao.ts`). A miniatura -t e menor
+  // do que o ideal para uma previa, mas e a unica que ainda existe — bem
+  // melhor que a imagem quebrada que um 404 causaria.
+  // `urlFoto` ja devolve URL absoluta (as fotos moram em outro dominio); o
+  // `new URL` com a origem da requisicao so cobre o caso de ela voltar a ser
+  // relativa.
   const imagemAbsoluta = evento.capa_caminho
     ? new URL(urlFoto(evento.capa_caminho, evento.arquivado ? 't' : 'g'), url.origin).toString()
     : null

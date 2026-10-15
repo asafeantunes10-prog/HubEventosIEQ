@@ -23,5 +23,7 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force"
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  // Testes rodam no Node (`npm test`), com tipos que este projeto nao carrega.
+  "exclude": ["**/*.test.ts"]
 }

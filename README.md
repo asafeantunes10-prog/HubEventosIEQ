@@ -7,96 +7,128 @@ No ar em **https://eventos-ieq.pages.dev**.
 
 Construído em Cloudflare Pages + Pages Functions + D1 — de propósito, nenhum desses
 serviços pede cartão de crédito. As fotos em si não passam por nenhum banco de dados nem
-serviço de armazenamento: são arquivos estáticos do próprio site, publicados junto com ele.
+serviço de armazenamento: são arquivos estáticos de um segundo projeto Pages
+(`eventos-ieq-fotos`), que o próprio painel atualiza.
 
-## Publicar um evento novo
+## Enviar as fotos de um evento
 
-```bash
-npm run publicar "C:\Fotos\Culto de Jovens 2026"
-```
+Tudo pelo painel, sem código. Em **`/admin`**:
 
-O nome da pasta vira o título do evento e o endereço (`/e/culto-de-jovens-2026`). O comando:
+1. **Novo evento** → título (o endereço sai dele) → Criar.
+2. Na tela do evento, em **Enviar fotos**, arraste as fotos ou a **pasta inteira** (ou use os
+   botões "Escolher fotos" / "Escolher uma pasta").
+3. Acompanhe a lista: cada arquivo mostra o que aconteceu com ele. No fim as fotos são
+   publicadas sozinhas.
+4. O evento nasce como **rascunho** — ninguém vê ainda. Confira a galeria, escolha a capa e
+   clique em **Publicar** quando estiver pronto.
 
-1. Gera duas versões WebP de cada foto (miniatura de 400px e versão grande de 2048px).
-2. Grava os metadados no banco (D1).
-3. Publica o site.
+**Quais arquivos servem:** JPEG, PNG, WebP e **RAW** (Sony ARW, Canon CR3/CR2 e também
+NEF, RAF, DNG, ORF, RW2 e outros). O que não é aceito (HEIC de iPhone, vídeo, TIFF) aparece
+na tela com o motivo — nada some em silêncio. Arquivos que acompanham a foto, como `.xmp`
+do Lightroom, são ignorados de propósito.
 
-O evento nasce como **rascunho** — não aparece para ninguém ainda. Publicar é decisão sua,
-depois de conferir a galeria pelo painel (`/admin`).
+**O arquivo original não sobe.** O navegador lê a foto no seu computador, gera as duas
+versões leves (miniatura de 400 px e versão grande de 2048 px no lado maior) e manda só
+elas — uns 250 MB por evento de 500 fotos, em vez de dezenas de GB de RAW. Por isso é
+preciso um **computador** (RAW no celular não tem memória); no celular dá para mandar
+JPEG.
 
-**É retomável.** Se o comando cair no meio (queda de luz, rede, um `Ctrl+C`), rode de novo:
-ele continua da foto onde parou, sem reprocessar nem duplicar nada.
+**Como o RAW aparece.** O site usa a **prévia que a própria câmera grava dentro do RAW**
+— o mesmo que você vê no visor, em tamanho cheio. Duas consequências:
 
-Duas flags úteis para testar sem afetar o site no ar:
+- A foto sai **como a câmera gravou**. Edições feitas no Lightroom/Camera Raw ficam num
+  arquivo `.xmp` ou no catálogo, **fora** do RAW, e nenhum navegador as lê. Para mostrar a
+  foto editada, exporte em JPEG (como já é feito); o RAW serve para as fotos "puras".
+- Se um RAW não tiver prévia grande (alguns DNG de celular, câmeras antigas), o site revela
+  o arquivo sozinho e avisa na linha dele que pode ficar mais escuro que na câmera.
 
-```bash
-npm run publicar "<pasta>" -- --local        # grava no banco de teste da máquina, não publica
-npm run publicar "<pasta>" -- --sem-deploy   # processa e grava, mas não publica
-```
+**Se der problema no meio:** feche sem medo e envie a mesma pasta de novo — o que já foi
+enviado é pulado (aparece como "Já enviada antes"), nada duplica. Fotos com erro têm o
+motivo escrito e um botão **Tentar de novo**. Se o envio terminar mas a publicação falhar,
+as fotos ficam guardadas e o botão **Publicar agora** tenta de novo.
+
+**Navegador:** Chrome, Edge e Firefox atuais, ou Safari 16.4 ou mais novo. Navegador
+antigo demais recebe um aviso em vez de um erro estranho.
+
+Depois de enviado, na mesma tela dá para **reordenar** (setas), escolher a **capa**,
+**apagar** uma foto (ela sai do site em alguns segundos) e **arquivar** o evento (ver
+abaixo).
 
 ## O painel administrativo
 
-Em **`/admin`**, protegido por uma senha única (sem conta por pessoa). Lá dá para editar
-título e descrição, reordenar fotos, escolher a capa, personalizar a cor do evento,
-publicar/despublicar e apagar — tudo pelo celular, inclusive.
-
-Só o **envio de fotos** exige o PC (é o `npm run publicar` acima) — o resto do painel
-funciona de qualquer lugar.
-
-Para trocar a senha:
+Em **`/admin`**, protegido por uma **senha única** (sem conta por pessoa): quem tiver a
+senha envia e edita. Para dar acesso a mais alguém, passe a senha; para tirar o acesso de
+todo mundo, troque-a.
 
 ```bash
 npm run gerar-senha "sua-senha-nova"
 ```
 
 O comando imprime dois `wrangler pages secret put` para rodar — é isso que grava a senha
-nova na Cloudflare. Sem argumento, ele sorteia uma senha forte em vez de pedir uma.
+nova na Cloudflare. Sem argumento, ele sorteia uma senha forte. Depois rode
+`npm run implantar` para o login valer.
+
+## Configurar o envio de fotos (uma vez só)
+
+O painel publica as fotos pela API do Cloudflare, e isso precisa de três coisas suas — todas
+gratuitas e **sem cartão**:
+
+1. **Criar o projeto das fotos:**
+   ```bash
+   npx wrangler pages project create eventos-ieq-fotos --production-branch=main
+   ```
+2. **Criar um token de API.** Em <https://dash.cloudflare.com/profile/api-tokens> →
+   *Create Token* → *Create Custom Token*, com a permissão **Account → Cloudflare Pages →
+   Edit**. Copie o token (aparece uma vez) e também o **Account ID** (na página inicial da
+   conta, coluna da direita). Depois grave os dois como secrets do site:
+   ```bash
+   npx wrangler pages secret put CF_API_TOKEN --project-name=eventos-ieq
+   npx wrangler pages secret put CF_ACCOUNT_ID --project-name=eventos-ieq
+   ```
+3. **Levar as fotos que já existem** para o projeto novo e passar o site a apontar para lá,
+   nesta ordem (assim o site no ar nunca fica sem foto):
+   ```bash
+   npm run migrar              # cria as colunas novas no banco de produção
+   npm run migrar-fotos        # leva fotos/ para eventos-ieq-fotos e grava os hashes
+   npm run implantar           # publica o site, já apontando para as fotos novas
+   ```
+
+Depois disso `fotos/` não é mais usada. (`npm run migrar-fotos` só roda uma vez: depois que
+o painel recebe fotos ele se recusa a rodar de novo, para não apagá-las.)
 
 ## Arquivar um evento antigo
 
-O plano gratuito da Cloudflare tem um teto de **20.000 arquivos no site**. Cada foto conta
-como dois (miniatura + versão grande), então o site aguenta uns 20 eventos de 500 fotos.
+O plano gratuito da Cloudflare tem um teto de **20.000 arquivos por projeto**. Cada foto
+conta como dois (miniatura + versão grande), então cabem uns 20 eventos de 500 fotos. A
+tela de envio mostra quanto já foi usado e avisa quando passa de 90%.
 
-Quando `npm run publicar` avisar que o site está passando de 18.000 arquivos, arquive os
-eventos com mais de um ano:
+Para liberar espaço, abra o evento antigo e clique em **Arquivar**. Isso tira do ar a versão
+grande das fotos dele — liberando a maior parte dos arquivos — e mantém as miniaturas: a
+página continua no ar e a grade continua bonita; só o download em alta (foto avulsa e ZIP)
+deixa de existir para aquele evento. **Não dá para desfazer pelo painel**; só enviando as
+fotos de novo.
 
-```bash
-npm run arquivar culto-de-jovens-2024               # so mostra o que apagaria
-npm run arquivar culto-de-jovens-2024 -- --confirmar   # apaga de verdade e publica
-```
+## Backup
 
-Isso apaga a versão grande (2048px) das fotos daquele evento — libera a maior parte dos
-arquivos dele — e mantém as miniaturas: a página continua no ar, a grade continua bonita,
-só o download em alta (foto avulsa e ZIP) deixa de existir para aquele evento.
-
-**Sem `--confirmar` o comando só simula** — nada é apagado. É a forma seguro de conferir
-antes, já que apagar arquivo aqui não tem volta (ver o aviso sobre backup abaixo).
-
-## A pasta `fotos/` — o backup que não é automático
-
-As fotos processadas moram em `fotos/`, **fora do repositório git** (são gigabytes de
-imagem; o GitHub não aguentaria, e cada operação do git ficaria lenta). Ela é o único lugar
-com os originais processados — se ela se perder desta máquina, **não há de onde
-republicar**.
-
-**Guarde uma cópia de `fotos/` num HD externo ou no Google Drive, sempre.** Isso é
-responsabilidade do projeto, não excesso de cuidado.
-
-Cada pasta de evento também carrega um `fotos.json` — um espelho do que está gravado no
-banco (título, ordem das fotos, dimensões, LQIP). Ele nunca é publicado, mas serve para
-reconstruir o banco inteiro a partir da cópia de backup, caso o D1 algum dia se perca.
+As fotos no site são **versões leves**, e o painel não guarda os originais: o backup de
+verdade são os **RAW e JPEG que a equipe já mantém**. Se um dia o site perder tudo, envie as
+pastas de novo — leva alguns minutos por evento. O D1 (títulos, ordem das fotos, capas) vive
+só na Cloudflare; se isso importar, guarde uma cópia com
+`npx wrangler d1 export hub-eventos-ieq --remote --output backup.sql`.
 
 ## Comandos
 
 ```bash
 npm run dev              # servidor de desenvolvimento
 npm run build            # checagem de tipos + build de produção
-npm run lint              # oxlint
-npm run publicar "<pasta>"    # processa e publica um evento
-npm run arquivar "<slug>"     # libera arquivos de um evento antigo
-npm run gerar-senha           # gera (ou troca) a senha do painel
+npm run lint             # oxlint
+npm test                 # testes unitários (node --test)
+npm run tipos:functions  # checagem de tipos das Functions
+npm run implantar        # constrói e publica o SITE (as fotos não vão junto)
+npm run migrar-fotos     # uso único, ver "Configurar o envio de fotos"
+npm run gerar-senha      # gera (ou troca) a senha do painel
 npm run migrar:local     # aplica as migrações no banco local
-npm run migrar            # aplica as migrações em produção
+npm run migrar           # aplica as migrações em produção
 ```
 
 ## Numa máquina nova
@@ -110,9 +142,6 @@ npm approve-scripts workerd
 O segundo e o terceiro comando são obrigatórios — sem eles `esbuild` e `workerd` ficam sem
 binário instalado, e nem o `vite` nem o `wrangler` funcionam. O erro que aparece nesse caso
 não deixa isso claro.
-
-A pasta `fotos/` **não vem no `git clone`** (ver acima) — restaure-a da cópia de backup
-antes de publicar qualquer coisa desta máquina.
 
 ## Estado do projeto
 

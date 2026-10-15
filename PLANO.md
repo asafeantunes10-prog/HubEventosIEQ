@@ -81,6 +81,13 @@ Requisições a assets estáticos são grátis e ilimitadas nos dois planos da C
 
 ### O que se perde, e é justo saber
 
+> **Atualização (outubro de 2026):** esta seção descreve o plano original e **não vale mais
+> para o envio de fotos**. Para os eventos seguintes o Asafe pediu envio pelo painel, com
+> suporte a RAW, e isso foi construído na etapa 7 (ver `CLAUDE.md`): as fotos passaram para um
+> segundo projeto Pages (`eventos-ieq-fotos`), que o painel atualiza pela API do Cloudflare, e
+> o processamento acontece no navegador. A conta dos 20.000 arquivos, as duas versões por foto
+> e o arquivamento continuam valendo — só que por projeto de fotos, e arquivar é um botão.
+
 **Subir foto pelo navegador sai.** Arquivo estático só entra num deploy, então publicar um
 evento é rodar um comando no PC:
 

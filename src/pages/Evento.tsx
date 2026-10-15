@@ -126,7 +126,7 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
   const { evento, fotos } = estado.dados
 
   /*
-    `arquivado` apaga so a versao -g (2048px) no disco — ver `scripts/arquivar.mjs`.
+    `arquivado` tira do ar so a versao -g (2048px) — ver `functions/lib/publicacao.ts`.
     A partir daqui, tudo que pediria essa versao (ZIP, download avulso, a foto
     grande do visualizador) precisa saber disso, ou o resultado e um download
     quebrado ou uma imagem quebrada em tela cheia, nao so um botao a menos.

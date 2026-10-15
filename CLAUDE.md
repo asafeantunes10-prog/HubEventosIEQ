@@ -105,7 +105,7 @@ funcionar.
 Um erro `7403` isolado do D1 remoto ("account not authorized") apareceu uma vez durante um
 deploy desta etapa; rodar de novo, sem mudar nada, resolveu. Parece soluço passageiro da
 API da Cloudflare, não escopo de token (`d1 (write)` aparece em `wrangler whoami`) nem bug.
-Registrando caso se repita: se `npm run publicar` falhar com `7403`, rode de novo antes de
+Registrando caso se repita: se um comando do wrangler (hoje `npm run migrar` ou `implantar`) falhar com `7403`, rode de novo antes de
 suspeitar de outra coisa.
 
 **Etapa 6 (Compartilhamento e acabamento) — concluída.** Meta tags OG de verdade, 404 real
@@ -187,8 +187,83 @@ após o deploy, uma rota inválida respondeu 200 (o comportamento ANTIGO) numa �
 tentativa; a mesma rota, e outras novas, responderam 404 correto segundos depois —
 propagação do deploy pelos PoPs da Cloudflare, não um bug de lógica.
 
-**O que ainda depende do Asafe** — a checklist final do `PLANO.md`, não uma etapa nova (não
-existe etapa 7): publicar um evento de verdade com ~500 fotos e conferir a contagem de
+**Etapa 7 (Envio de fotos pelo painel + RAW) — código pronto e testado; falta a configuração
+do Asafe.** Reverte, a pedido dele (outubro de 2026, para os próximos eventos), a decisão da
+etapa 1 de "sem upload pelo navegador". Motivos e achados:
+
+- **Por que as fotos mudaram de casa.** Foto nova só entra no ar por um deploy do Pages, e
+  um deploy feito por API (de dentro de uma Function) não leva o código das Functions — o
+  site perderia o servidor. Então as fotos moram num **segundo projeto Pages**,
+  `eventos-ieq-fotos` (só estáticos, sem Function), e o site (`eventos-ieq`) não carrega mais
+  foto nenhuma. `urlFoto()` em `src/lib/fotos.ts` agora devolve URL absoluta
+  (`https://eventos-ieq-fotos.pages.dev/fotos/...`); `fetch` de foto (ZIP, `baixarUma`) depende
+  do CORS do `_headers` desse projeto (`functions/lib/cabecalhosFotos.ts`).
+- **O processamento é no navegador**, em Web Workers (`src/lib/envio/`): lê o arquivo local
+  (JPEG/PNG/WebP/RAW), gira pelo EXIF, reduz (g = **lado maior** de 2048 px; t = 400 px de
+  largura; nunca amplia), codifica WebP com `@jsquash/webp` (libwebp em WASM — o
+  `canvas.toBlob('image/webp')` devolve PNG no Safari) e sobe só isso (~250 KB a 500 KB por
+  foto). O servidor não teria como (10 ms de CPU).
+- **As Functions só repassam e orquestram** (`functions/api/admin/armazenamento/`): `enviar`
+  repassa o lote em stream para `/pages/assets/upload` (a API do Cloudflare **não** libera
+  CORS para navegador); `publicar` monta o manifesto **concatenando texto gerado no SQL**
+  (`functions/lib/publicacao.ts` — interpretar 20.000 entradas estouraria os 10 ms), chama
+  `upsert-hashes` e cria o deployment; `estado` devolve o uso do limite e fecha o
+  deployment. O protocolo é o do `wrangler pages deploy` (`blake3(base64 + extensão)`, 32
+  hexa; conferido contra o `blake3-wasm` do wrangler em `hashPages.test.ts`).
+- **Estados de uma foto (`fotos.no_ar`):** 0 registrada e fora do ar, 2 num deploy em
+  andamento, 1 no ar. A API pública só devolve `no_ar = 1`, para nunca apontar para arquivo
+  que ainda não existe. `publicar` **recusa** (409) se alguma foto no ar não tiver hash:
+  um deploy do Pages SUBSTITUI o site anterior e uma foto sem hash sumiria sem erro
+  (`group_concat` pula NULL em silêncio).
+- **RAW** (`src/lib/envio/decodificarRaw.ts`, `@colorhythm/libraw-wasm`, LibRaw 0.22.1):
+  usa a **prévia JPEG embutida**, que nas amostras reais (Sony FX30 ARW, Canon R6/R7 CR3,
+  5D IV CR2) vem em **tamanho cheio** e com o visual da câmera; só revela o RAW em meia
+  resolução quando a prévia tem menos de 2048 px (avisa na linha do arquivo). A orientação
+  vem do `flip` da LibRaw (EXIF 8 = flip 5; 6 = 6; 3 = 3) e só deixa de ser aplicada se o
+  JPEG embutido trouxer uma própria diferente de 1 — as prévias declaram 1 mesmo em foto
+  vertical. **Edições do Lightroom/Camera Raw (`.xmp`, catálogo) não aparecem** — o Asafe
+  confirmou que o RAW é para fotos "puras" e as editadas saem em JPEG.
+- **Achados que custaram caro, para não repetir:**
+  - O **Chrome ignora `imageOrientation: 'none'`** e gira sozinho (medido, v155). Girar de
+    novo estraga a foto. `navegadorGira.ts` detecta o comportamento com um JPEG de 2x1
+    px e orientação 6; nunca suponha.
+  - O **Firefox decodifica JPEG truncado pela metade**, sem erro; o Chrome recusa.
+    `jpeg.ts` confere o EOI (`FF D9`) em qualquer navegador.
+  - O WebKit do Playwright no Windows **não tem `OffscreenCanvas`** (o Safari 16.4+ tem).
+    O painel detecta e avisa (`suporte.ts`); **Safari de verdade nunca foi testado**.
+  - Um teste que envia zero fotos passa por engano (`0 === 0`); asserte a contagem.
+- **Como foi testado:** Chrome 155 e Firefox, de verdade, via Playwright, contra
+  `wrangler pages dev` (D1 local) + um servidor que imita a API do Pages e **valida os
+  hashes como a Cloudflare faria** (`CF_API_BASE` no `.dev.vars` aponta para ele).
+  Cenários: 10 imagens sintéticas com orientações 1/2/3/6/8, PNG, WebP, um JPEG de 26 MP,
+  arquivos que devem ser recusados; 9 RAW reais (amostras de raw.pixls.us, 4 com a tag de
+  orientação adulterada para simular foto vertical); cancelar e retomar sem duplicar,
+  deploy recusado, trava de hash, apagar foto, arquivar. Tudo passou, ~1 s por foto com 3
+  workers. Esse harness era descartável e **não está no repo**; os testes do repo são os
+  unitários (`npm test`).
+- **Aposentados:** `npm run publicar`, `npm run arquivar` e o `fotos.json` espelho. Arquivar
+  virou botão no painel (`PATCH arquivado` + deploy). A dependência `sharp` saiu. `scripts/d1.mjs`
+  fica só até o Asafe confirmar a migração (`scripts/migrar-fotos.mjs` o usa).
+
+**O que ainda depende do Asafe, em ordem** (tudo sem cartão; passo a passo no README, seção
+"Configurar o envio de fotos"):
+1. `npx wrangler pages project create eventos-ieq-fotos --production-branch=main`
+2. Criar o token de API (Conta → Cloudflare Pages → Editar) e gravar `CF_API_TOKEN` e
+   `CF_ACCOUNT_ID` com `wrangler pages secret put`.
+3. `npm run migrar` → `npm run migrar-fotos` → `npm run implantar`, **nessa ordem** (as fotos
+   passam a existir no projeto novo antes de o site apontar para lá).
+4. Testar de verdade: enviar uma pasta com RAW da FX30 e da Canon pelo painel e conferir a
+   orientação das verticais (as amostras reais que testei eram todas horizontais; a vertical
+   foi simulada). Abrir o painel num Mac/Safari, se houver um à mão.
+5. Depois de a migração estar confirmada, remover `scripts/d1.mjs` e `scripts/migrar-fotos.mjs`
+   (e o `migrar-fotos` do `package.json`).
+
+**Riscos que só a produção responde:** (a) a doc do Pages cita 500 *builds*/mês e não diz se
+*direct upload* conta — um deploy por sessão de envio, nunca um por foto; (b) o CPU de 10 ms
+do `publicar` com um site cheio (20.000 entradas) foi só estimado, não medido no runtime
+real; (c) uma foto apagada só sai do ar no deploy seguinte.
+
+**Checklist final do `PLANO.md`, ainda aberta** (não é uma etapa): publicar um evento de verdade com ~500 fotos e conferir a contagem de
 arquivos no painel do Pages; abrir o link no celular em rede móvel (não Wi-Fi); baixar uma
 foto e o ZIP completo no celular; colar o link de um evento no Instagram e no WhatsApp e
 ver a prévia **de verdade** (o servidor já entrega a tag certa e a imagem responde 200 —
@@ -218,7 +293,7 @@ cartão na ativação — **pare e diga isso a ele**. É o caminho errado.
 
 Pages, Pages Functions e D1 não pedem cartão. É com isso que se trabalha. O painel admin é
 protegido por uma senha própria (`functions/api/login.ts`), não por Access — ver a etapa 5
-em "Onde retomar".
+em "Onde retomar". O token de API do envio de fotos (etapa 7) também não pede cartão.
 
 ### 2. Este projeto é independente de `c:\Projetos\LandingPageAS`
 
@@ -233,6 +308,10 @@ Proibido: `import` que saia da pasta, alias de TS ou Vite apontando para fora, `
 
 Criar conta, `wrangler login`, criar projeto Pages — tudo que exige navegador ou decisão
 dele. Diga exatamente o que fazer e espere. Não contorne.
+
+Isso vale também para o que a etapa 7 deixou pendente: criar o projeto `eventos-ieq-fotos`
+e o token de API (`CF_API_TOKEN`, `CF_ACCOUNT_ID`) são ações dele, no navegador/terminal
+dele — imprima os comandos e espere.
 
 O Cloudflare Access **não faz mais parte do plano** (ver a regra 1) — não peça para o
 Asafe configurar Access. A senha do painel já está gerada e configurada
@@ -251,16 +330,21 @@ Isso vale para todo arquivo novo. Os arquivos existentes seguem essa convenção
 
 ## A arquitetura em cinco linhas
 
-As fotos **não** ficam num serviço de armazenamento: são **arquivos estáticos do próprio
-site**, em `/fotos/...`, publicados junto com ele. Requisição a asset estático no Cloudflare
-Pages é grátis e ilimitada — some o teto de 100 mil requisições/dia e some o risco de um
-ZIP de 500 fotos comer meia quota. O D1 guarda só metadados. O gargalo passa a ser
-**contagem de arquivos: 20.000 por site**, e é por isso que cada foto tem duas versões, não
-três.
+As fotos **não** ficam num serviço de armazenamento: são **arquivos estáticos de um segundo
+projeto Pages** (`eventos-ieq-fotos`, sem Functions), atualizado pelo painel por API.
+Requisição a asset estático no Cloudflare Pages é grátis e ilimitada — some o teto de 100
+mil requisições/dia e some o risco de um ZIP de 500 fotos comer meia quota. O D1 guarda só
+metadados (e o hash de cada arquivo, que o deploy exige). O gargalo é **contagem de
+arquivos: 20.000 por projeto**, e é por isso que cada foto tem duas versões, não três.
+Quem processa a foto é o **navegador de quem envia** — nenhum original, e muito menos RAW,
+passa pelo servidor.
 
 **`urlFoto()` em `src/lib/fotos.ts` é o único lugar do código que sabe de onde vem uma
-foto.** O banco guarda `culto-jovens-2026/a1b2`, sem sufixo nem extensão. Mantenha assim:
-é o que torna barata uma migração futura. Não espalhe montagem de URL pelas telas.
+foto.** O banco guarda `culto-jovens-2026/a1b2`, sem sufixo nem extensão. Foi isso que fez
+a mudança para o segundo projeto custar uma linha. Não espalhe montagem de URL pelas telas.
+
+**Um deploy do Pages SUBSTITUI o anterior.** O que faltar no manifesto some do ar. Por isso o
+manifesto sai sempre do banco, e por isso o painel recusa publicar com foto sem hash.
 
 ---
 
@@ -270,7 +354,10 @@ foto.** O banco guarda `culto-jovens-2026/a1b2`, sem sufixo nem extensão. Mante
 npm run dev              # servidor de desenvolvimento
 npm run build            # tsc -b && vite build
 npm run lint             # oxlint
-npm run publicar "<pasta>"   # processa as fotos de um evento
+npm test                 # testes unitarios (node --test); os e2e nao estao no repo
+npm run tipos:functions  # checagem de tipos das Functions (fora do tsc -b)
+npm run implantar        # constroi e publica o SITE (as fotos nao vao junto)
+npm run migrar-fotos     # uso unico, da etapa 7 (ver "Onde retomar")
 npm run migrar:local     # aplica as migrations no D1 local
 npm run migrar           # aplica no D1 remoto (producao)
 ```
@@ -283,9 +370,12 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
 
 ## Armadilhas conhecidas
 
-- **`fotos/` está fora do git e não tem backup automático.** É onde moram os únicos
-  originais processados. Se ela se perder, não há de onde republicar. Sempre que o assunto
-  encostar nisso, lembre o Asafe da cópia no HD externo ou no Drive.
+- **As fotos do site são versões leves e só existem na Cloudflare.** O backup real são os
+  RAW/JPEG que a equipe já guarda — enviar a pasta de novo as recria. A pasta `fotos/` do
+  PC só importa até a migração (`npm run migrar-fotos`); depois não é mais usada.
+- **Não rode `npm run migrar-fotos` depois que o painel recebeu fotos.** Ele faz um deploy só
+  com o que há em `fotos/` e apagaria as do painel; por isso ele mesmo se recusa
+  (`chave_origem` não nula) — não remova essa trava.
 - **No D1 remoto, consulta tem que ir por `--command`, nunca por `--file`.** Com arquivo,
   o wrangler trata como importação em lote e devolve um **resumo** ("Total queries
   executed", "Rows read") dentro do campo `results`, no lugar das linhas. Quem espera as
@@ -294,10 +384,10 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
   processar todas as fotos. `consultar()` em `scripts/d1.mjs` já usa `--command` e tem uma
   guarda que falha na hora se o resumo voltar. No `--local` isso não acontece, então o bug
   só aparece contra produção.
-- **Retomar pode deixar arquivo órfão.** Se o script cair depois de gravar os WebP e antes
-  de gravar no banco, a execução seguinte reprocessa aqueles originais com identificadores
-  novos e os antigos ficam para trás — invisíveis no site, mas ocupando lugar no teto de
-  20.000. `limparOrfaos()` apaga todo WebP sem linha no banco, ao fim de cada execução.
+- **Ordem do deploy importa.** Para qualquer mudança que mexa em `urlFoto()` ou no manifesto,
+  as fotos precisam existir no destino ANTES de o site apontar para lá (foi a ordem da
+  migração). E `wrangler pages dev` com Functions só mexe no D1 local — use `CF_API_BASE`
+  para não tocar na conta real.
 - **O lint tem dois avisos permanentes** — `set-state-in-effect` em `Imagem.tsx` (o caso
   da imagem em cache, explicado no comentário) e `only-export-components` em `button.tsx`
   (padrão do shadcn). São conhecidos. Não "conserte" nenhum dos dois.
@@ -308,6 +398,6 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
 
 ## Fora de escopo, de propósito
 
-R2 e qualquer serviço com cartão · upload de foto pelo navegador · marca d'água · PIN ou
+R2 e qualquer serviço com cartão · marca d'água · reconhecimento facial (o Asafe pediu, ficou para depois do envio) · PIN ou
 login de visitante · seleção de fotos pelo cliente · o original da câmera · domínio próprio
 · qualquer vínculo ou peça de marca do projeto que serviu de molde.

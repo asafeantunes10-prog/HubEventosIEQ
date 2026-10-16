@@ -149,7 +149,17 @@ npm run migrar           # aplica as migrações em produção
 
 ## Numa máquina nova
 
+Tudo que importa está no GitHub. O que mora na Cloudflare (banco, fotos, senha do painel) não
+depende do computador: qualquer PC com acesso à sua conta enxerga o mesmo.
+
+**1. Instalar uma vez:** [Git](https://git-scm.com), [Node.js](https://nodejs.org) 24 (o mesmo
+usado aqui; abaixo de 22.18 os testes não rodam) e o VS Code.
+
+**2. Baixar e preparar o projeto:**
+
 ```bash
+git clone https://github.com/asafeantunes10-prog/HubEventosIEQ.git
+cd HubEventosIEQ
 npm install
 npm approve-scripts esbuild
 npm approve-scripts workerd
@@ -157,7 +167,27 @@ npm approve-scripts workerd
 
 O segundo e o terceiro comando são obrigatórios — sem eles `esbuild` e `workerd` ficam sem
 binário instalado, e nem o `vite` nem o `wrangler` funcionam. O erro que aparece nesse caso
-não deixa isso claro.
+não deixa isso claro. (O GitHub pode pedir o seu login na primeira vez.)
+
+**3. Só para publicar o site ou mexer no banco** (`npm run implantar`, `npm run migrar`,
+`npm run trocar-senha`): entrar na Cloudflare uma vez, com a mesma conta de sempre.
+
+```bash
+npx wrangler login
+```
+
+**4. Ver o site funcionando:** `npm run dev` abre a interface em `http://localhost:5173` já com
+os eventos reais (só leitura). O painel `/admin` e o envio de fotos não funcionam nesse modo;
+use o site publicado para isso.
+
+**Regra de ouro com mais de um computador:** `git pull` **antes** de começar e `git push`
+**depois** de terminar. Publicar (`npm run implantar`) a partir de uma pasta desatualizada
+apaga do ar o que ela não tem — já aconteceu uma vez.
+
+**Não vai para o GitHub e não faz falta:** `fotos/` (as fotos já estão na Cloudflare e os
+originais são os RAW/JPEG da equipe), `node_modules/`, `dist/` e a pasta
+`Modelo-Layout-HubEventos/` (material bruto da identidade; o que o site usa já está convertido
+em `src/assets/identidade/` — só precisa dela para trocar a logo ou as fontes).
 
 ## Estado do projeto
 

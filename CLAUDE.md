@@ -647,12 +647,13 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
   `0003_numero_amigavel.sql` (outro PC, agosto). As duas já estão aplicadas em produção, cada uma
   com o próprio nome, e o wrangler controla pelo NOME — então **não renumere nenhuma**: a
   renomeada pareceria nova e tentaria rodar de novo (`ADD COLUMN` duplicado). A próxima é `0004`.
-- **`git pull` ao começar e `git push` ao terminar, sempre.** O remoto se chama `Trabalho`. Já
+- **`git pull` ao começar e `git push` ao terminar, sempre.** O remoto se chama `Trabalho` neste PC. Já
   aconteceu de dois PCs trabalharem em paralelo a partir da etapa 6 (um fez o envio pelo painel,
   o outro a identidade e correções de foto), e o resultado foi um `git pull` com 14 arquivos em
   conflito e um site publicado de um lado que não tinha o trabalho do outro: cada deploy
   SUBSTITUI o anterior, então quem publica por último apaga as mudanças de quem não estava no
-  código dele. Antes de `npm run implantar`, confira `git status` e `git log Trabalho/main..` vazios.
+  código dele. Antes de `npm run implantar`, confira `git status` limpo e `git log HEAD..@{u}` vazio
+  (o nome do remoto muda de PC para PC: `Trabalho` neste, `origin` num clone novo — por isso `@{u}`).
 
 ---
 

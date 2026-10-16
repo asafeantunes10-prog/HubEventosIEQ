@@ -18,6 +18,19 @@ export default defineConfig({
   },
 
   server: {
+    /*
+      O `npm run dev` serve so a interface: as Pages Functions (`functions/`) nao rodam no
+      `vite` puro, e sem isto `/api/eventos` devolveria o index.html no lugar do JSON — a home
+      e a pagina do evento abririam com erro, e num computador novo isso parece "quebrado".
+
+      Aponta SO a leitura publica (`/api/eventos` e `/api/eventos/:slug`) para o site no ar:
+      so le, nao muda nada em producao. O painel (`/api/admin`, login) nao passa por aqui de
+      proposito; para mexer nele, `wrangler pages dev` com o D1 local.
+    */
+    proxy: {
+      '/api/eventos': { target: 'https://eventos-ieq.pages.dev', changeOrigin: true },
+    },
+
     watch: {
       /*
         `fotos/` guarda as versoes processadas de todos os eventos — milhares

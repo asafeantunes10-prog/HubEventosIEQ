@@ -123,9 +123,17 @@ function git(...args) {
  */
 function estadoDoGit() {
   const sujo = git('status', '--porcelain').stdout.trim()
-  git('fetch', 'Trabalho')
-  const atras = Number(git('rev-list', '--count', 'HEAD..Trabalho/main').stdout.trim() || 0)
   if (sujo) return 'ha mudancas nao salvas (commit) neste computador'
+
+  // `@{upstream}` e o ramo remoto que este ramo acompanha, seja qual for o NOME do remoto
+  // (`Trabalho` neste PC, `origin` num clone novo). Se qualquer passo falhar, a resposta e
+  // "nao consegui conferir", nunca "esta em dia": um erro engolido aqui publicaria do mesmo
+  // jeito, e foi publicar sem conferir que apagou o trabalho do outro PC.
+  const buscou = git('fetch')
+  if (buscou.status !== 0) return 'nao consegui falar com o GitHub para conferir se este computador esta em dia'
+  const contagem = git('rev-list', '--count', 'HEAD..@{upstream}')
+  if (contagem.status !== 0) return 'nao consegui descobrir qual e o ramo do GitHub que este acompanha'
+  const atras = Number(contagem.stdout.trim())
   if (atras > 0) return `o GitHub tem ${atras} commit(s) que este computador nao tem (faca git pull)`
   return null
 }

@@ -13,8 +13,8 @@ export function Rodape() {
         <div className="flex flex-col gap-4">
           <Marca decorativo className="w-[150px] md:w-[180px]" />
           <p className="max-w-[36ch] text-base leading-relaxed text-muted-foreground md:max-w-[46ch] md:text-lg">
-            As fotos de cada evento da igreja, reunidas num lugar só. Sem conta, sem senha e sem
-            link que expira.
+            Fotos de todos os eventos da igreja. É só clicar para baixar e compartilhar nas suas
+            redes sociais.
           </p>
         </div>
 

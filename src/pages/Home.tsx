@@ -3,10 +3,11 @@ import { Link } from 'react-router'
 import { Camera, Loader2, TriangleAlert } from 'lucide-react'
 
 import { CartaoEvento } from '@/components/CartaoEvento'
-import { CapaEvento, ehCapaVertical } from '@/components/CapaEvento'
+import { CapaEvento } from '@/components/CapaEvento'
 import { Marca } from '@/components/Marca'
 import { Rodape } from '@/components/Rodape'
 import { listarEventos } from '@/lib/api'
+import { ehCapaVertical } from '@/lib/fotos'
 import { cn, formatarData } from '@/lib/utils'
 import type { EventoComCapa } from '@/lib/tipos'
 

@@ -13,6 +13,7 @@
     "preview": "vite preview --host",
     "implantar": "tsc -b && vite build && wrangler pages deploy dist --project-name=eventos-ieq",
     "migrar-fotos": "node scripts/migrar-fotos.mjs",
+    "converter-raw": "node scripts/converter-raw.mjs",
     "gerar-senha": "node scripts/gerar-senha.mjs",
     "migrar:local": "wrangler d1 migrations apply hub-eventos-ieq --local",
     "migrar": "wrangler d1 migrations apply hub-eventos-ieq --remote"

@@ -187,6 +187,181 @@ após o deploy, uma rota inválida respondeu 200 (o comportamento ANTIGO) numa �
 tentativa; a mesma rota, e outras novas, responderam 404 correto segundos depois —
 propagação do deploy pelos PoPs da Cloudflare, não um bug de lógica.
 
+### Extensões pós-etapa 6 (feitas em outro PC em agosto de 2026; juntadas ao resto em outubro)
+
+> **Nota da junção.** Esta parte foi escrita num PC que ainda estava na etapa 6, enquanto o envio
+> pelo painel (etapa 7) e a identidade "Avante & Sem Parar" (etapa 8) eram feitos em outro. Os dois
+> históricos divergiram no GitHub e foram juntados num merge. O texto abaixo está como foi
+> escrito, mas **alguns pedaços foram superados** e valem só como história:
+>
+> - **`npm run publicar` e `scripts/publicar.mjs` não existem mais** — o navegador processa a foto
+>   (etapa 7). Isso inclui o nome `IMG_0001` e a correção de orientação com `sharp`. A coluna
+>   `eventos.proximo_numero_foto` (migração `0003_numero_amigavel.sql`, já aplicada em produção)
+>   continua no banco sem uso; fotos enviadas pelo painel usam o id aleatório como nome.
+> - **"Apagar foto avulsa":** o endpoint `DELETE .../fotos/:fotoId` saiu. O que vale é
+>   `DELETE .../fotos` com `{ ids }` (etapa 7), que também faz o deploy que tira o arquivo do ar —
+>   a versão antiga só apagava o registro e deixava o arquivo órfão.
+> - **"Identidade visual chegou"** (fundos `.fundo-identidade` e `.fundo-evento`, selo no cabeçalho):
+>   substituída pela etapa 8. As peças em `src/assets/marca/` (brasão do Diaconato, GMH4, selo da
+>   Quadrangular MS) continuam no repositório sem uso em tela; **o favicon do selo da Quadrangular
+>   MS (`public/favicon-32.png`, `favicon-192.png`, `apple-touch-icon.png`) continua valendo**.
+> - **`scripts/converter-raw.mjs`** (ExifTool) ficou como ferramenta avulsa; o painel lê RAW sozinho.
+> - **Continua valendo:** a grade que só monta 60 fotos por vez (`GradeFotos.tsx`) e a lição sobre
+>   `content-visibility` dentro de `columns`; a rota `/api/eventos/:slug` com uma consulta só; o texto
+>   da home escrito pelo Asafe ("Fotos de todos os eventos da igreja. É só clicar para baixar e
+>   compartilhar nas suas redes sociais."), hoje no rodapé.
+
+**Apagar foto avulsa.** `DELETE /api/admin/eventos/:id/fotos/:fotoId`
+(`functions/api/admin/eventos/[id]/fotos/[fotoId].ts`) apaga a linha da foto, tira ela da
+capa se era a escolhida, e recalcula `total_fotos` — os três num `batch` só. Mesma ressalva
+do apagar evento (etapa 5): **não apaga o arquivo do disco nem do site publicado**, só o
+registro no D1 — o `.webp` fica órfão até o próximo `npm run publicar` (de qualquer evento)
+rodar `limparOrfaos()`. Existe para corrigir engano (foto errada que entrou junto num lote),
+não para curadoria. Na tela (`GerenciarFotos.tsx`, dentro de `EditarEvento.tsx`), um ícone de
+lixeira por miniatura, confirmação por `window.confirm` (não um `Dialog` — com centenas de
+fotos na grade, um por miniatura seria pesado para um clique que precisa ser rápido).
+
+**Identidade visual chegou.** As primeiras peças (brasão do Diaconato, selo da Quadrangular
+MS, logo do Grupo Missionário de Homens) vieram do Asafe e substituem o placeholder que
+`index.css` descrevia como provisório. Decisão, depois de três rodadas de prévia num
+Artifact: continua **tema único, escuro** (a regra original se mantém — só a cor mudou), mas
+agora com identidade de verdade:
+- `.fundo-identidade` (novo, em `index.css`): o fundo da home — os quatro tons tirados do
+  brasão do Diaconato (vermelho, dourado, azul, roxo) em brilhos suaves nos quatro cantos,
+  sobre uma base bem escura. Aplicado num `<div>` que envolve o `<main>` da `Home.tsx`, para
+  cobrir a tela inteira (o `<main>` sozinho é centralizado e não tem a largura da viewport).
+- Selo pequeno da Quadrangular MS no cabeçalho da home, ao lado do texto "Igreja do Evangelho
+  Quadrangular" — depois de uma tentativa maior (um "vitral" cônico nas quatro cores) não
+  agradar, ficou provado que discreto funciona melhor aqui.
+- `.fundo-evento` (novo): mesma lógica na página de um evento, mas com UM glow dominante
+  controlado por `var(--primary)` — a MESMA variável que `cor_destaque` já sobrescrevia no
+  wrapper de `Evento.tsx` desde a etapa 3. Não precisou mexer no schema nem no painel: quem
+  já sabia usar `cor_destaque` já está usando o fundo novo. Um segundo glow fixo (vermelho
+  fechado do brasão) dá o fio de identidade que se repete em todo evento.
+- Os três arquivos originais (PNG/JPEG) estão em `src/assets/marca/` — só a Quadrangular MS
+  está com uso real hoje (o selo do cabeçalho). GMH4 e o brasão do Diaconato foram
+  incorporados ao repositório mas ainda NÃO aparecem em tela nenhuma: um banner combinando
+  os dois, específico da página do evento "Diaconato", pede ou um schema novo (logos por
+  evento não existem como coluna) ou um atalho grudado no slug — nenhum dos dois foi feito
+  ainda, por decisão de escopo (ver conversa, não neste arquivo).
+
+**Testado:** `npm run build`, `npm run tipos:functions` e `npm run lint` limpos; o CSS de
+produção (`dist/assets/index-*.css`) confirmado com as classes novas depois do build; `npm
+run dev` local respondeu 200 na home. **NÃO testado:** clique real no botão de apagar foto
+contra o painel publicado, nem a home/evento nova num navegador de verdade (sem Chrome
+disponível nesta sessão) — vale conferir visualmente antes de divulgar. **NÃO comitado, NÃO
+publicado em produção** — o `git status` segue limpo do commit `6af726d` até alguém decidir
+publicar isto.
+
+**Nome de arquivo amigavel (`IMG_0001`, `IMG_0002`...).** `npm run publicar` gerava
+`<id-aleatorio>-t.webp` / `-g.webp` — ilegivel pra quem abre a pasta `fotos/` na mao. Agora
+o arquivo (e o `caminho` gravado no banco) usa um numero sequencial por evento
+(`PREFIXO_ARQUIVO`/`DIGITOS_SEQUENCIA` em `scripts/publicar.mjs`), comecando em 1. O `id`
+que e chave primaria da tabela `fotos` continua sendo o aleatorio de sempre — sao duas
+identidades com papeis diferentes (comentario em `processarFoto` explica): `id` precisa ser
+unico no BANCO INTEIRO e e o que o painel usa para apagar foto/capa; o numero amigavel so
+precisa ser unico DENTRO da pasta do evento.
+
+O numero vem de `eventos.proximo_numero_foto` (coluna nova, migracao
+`0003_numero_amigavel.sql`) — GRAVADO, nunca recalculado por "maior numero que existe hoje".
+Se fosse recalculado, apagar a foto de maior numero pelo painel (endpoint que ja existia,
+ver "Apagar foto avulsa" acima) faria a proxima publicacao reaproveitar aquele numero para
+um arquivo DIFERENTE — colisao de nome que um navegador com cache antigo mostraria errado.
+O contador so cresce, avanca pelo total de arquivos TENTADOS (nao so os que deram certo, pra
+uma falha no meio do lote nao deixar um numero livre pra reuso) e nunca reflete quantas
+fotos existem agora — so quantas ja foram atribuidas.
+
+**Testado local** (`--local`, fotos sinteticas, evento descartavel): numeracao comecando em
+`IMG_0001`; rodar de novo sem fotos novas nao reprocessa nem avanca o contador (retomada
+intacta); apagar a linha de `IMG_0003` do banco e do disco (simulando o endpoint do painel)
+e publicar de novo — a foto seguinte virou `IMG_0004`, nunca reaproveitou `0003`. `npm run
+build`, `tipos:functions` e `lint` limpos depois da mudanca. Dados de teste apagados do
+banco local e do disco em seguida. Migracao aplicada no D1 local **e no remoto** (`npm run
+migrar`, rodada em producao); eventos ja publicados nao precisaram de nenhum ajuste, o `id`
+deles nao mudou, so fotos NOVAS depois da migracao ganham o nome bonito.
+
+**Bug de verdade encontrado em producao, e corrigido: foto vertical saia deitada no
+site.** Veio a tona publicando `diaconato-homens-2026` (evento real, ~100 fotos, primeira
+vez que uma camera de verdade — nao WhatsApp — alimentou o pipeline). Causa: `sharp` nunca
+girava o pixel pela tag `Orientation` do EXIF antes de redimensionar — uma foto tirada com a
+camera vertical continua deitada nos bytes, so um FLAG separado no arquivo diz "gire 90 pra
+mostrar certo", e nada em `processarFoto` (nem em `gerarLqip`) lia esse flag. Nao era erro
+nenhum pro script — resize e webp funcionavam perfeitos na orientacao errada, silenciosos.
+Corrigido com `.rotate()` (sem argumento, o sharp le a tag e gira sozinho) nos dois lugares;
+a largura usada pra nunca ampliar (`Math.min(versao.largura, width)`) tambem precisou virar
+`larguraEfetiva` — pra orientacao 5-8 (giro de 90/270) `width`/`height` do `metadata()` saem
+TROCADOS em relacao ao que a foto vira depois de girada. Vale pra QUALQUER foto vertical
+daqui pra frente, de qualquer camera — nao e algo especifico deste evento.
+
+O mesmo evento expos outro buraco: **nao existia caminho pra fotos RAW (`.ARW`)**. `sharp`
+nao decodifica RAW de camera (so imagem de verdade — JPEG, PNG, WebP, TIFF), entao um
+`.ARW` na pasta era ignorado por `publicar.mjs` sem aviso nenhum — a contagem de fotos nao
+mudava e nada explicava o motivo. `scripts/converter-raw.mjs` (novo, `npm run
+converter-raw "pasta"`) resolve: toda foto RAW ja tem, embutida no proprio arquivo, uma
+PREVIA em JPEG (o que a camera usa no visor) — o script extrai essa previa com o ExifTool E
+copia a tag `Orientation` do `.ARW` pra dentro dela num segundo passo, porque a previa sai
+SEM essa tag (ela mora so no arquivo original) — sem os dois passos juntos, a foto teria
+saido deitada de novo, so que por um motivo diferente (tag ausente, nao tag ignorada). Nunca
+apaga nem move o `.ARW`; se o `.jpg` ja existe, pula. ExifTool vendorizado em
+`ferramentas/exiftool/` (fora do git, ver `.gitignore` — binario + runtime Perl de ~35 MB,
+numa maquina nova o proprio script explica o que baixar e onde por).
+
+**Incidente no meio do caminho: uma foto do evento foi perdida de verdade.** Durante o
+diagnostico, um arquivo chamado `DSC07292.jpg` na pasta nao era uma previa gerada — era o
+`.ARW` original renomeado a mao pelo Asafe pra `.jpg` (mesmo tamanho em bytes, `sharp` nao
+conseguia abrir). Foi apagado por engano (`rm`, direto pelo terminal) achando que era
+descartavel; nao foi pra Lixeira do Windows (delete por linha de comando pula ela), e nao
+apareceu na Lixeira do OneDrive tambem. Sem conserto. Licao registrada aqui pra nao se
+repetir: **nunca apagar um arquivo que possa ser a unica copia sem antes achar de onde ele
+veio** — um `.jpg` do tamanho de um `.ARW` inteiro (~30 MB) e sinal de original renomeado,
+nao de foto ja processada.
+
+**Performance da grade com o evento cheio (537 fotos).** Depois do lote todo publicado, a
+tela de `diaconato-homens-2026` ficou lenta pra carregar e algumas fotos apareciam como "Não
+carregou". Conferido nos dois lados: `/api/eventos/:slug` responde em ~0,8s com 205 KB de
+JSON (razoavel — nao e o gargalo); e as 537 fotos, nas duas versoes (`-t` e `-g`), TODAS
+respondem 200 no site publicado (varredura completa, nao amostra) — ou seja, nao faltava
+nenhum arquivo, o "Não carregou" era o navegador desistindo de fotos fora de tela num DOM de
+537 cartoes, nao um 404 de verdade.
+
+Corrigido em `CartaoFoto.tsx`: `content-visibility: auto` + `contain-intrinsic-size` no
+`<figure>` de cada cartao. O `loading="lazy"` na imagem ja evitava 537 DOWNLOADS de uma vez
+(so baixa o que esta perto da tela); isto faz o mesmo pro CSS — o navegador pula layout e
+pintura dos cartoes fora de tela em vez de montar os 537 de uma vez so. `contain-intrinsic-
+size: auto 320px` da um palpite de altura pro scroll nao pular antes de cada cartao ser
+medido de verdade. `npm run build` e `lint` limpos; deploy conferido no dominio de producao
+(o novo CSS respondeu 200 depois de alguns segundos de propagacao — o mesmo soluço
+passageiro ja registrado antes, nao um erro).
+
+**Glitch no celular, efeito colateral direto da otimizacao acima — E A PRIMEIRA TENTATIVA DE
+CONSERTO NAO RESOLVEU.** Primeira hipotese: o `contain-intrinsic-size: auto 320px` usava um
+palpite de altura FIXO pra todo cartao, entao trocar pra um palpite baseado na proporcao real
+da foto (`Math.round(300 / proporcao)`) devia bastar. Nao bastou — o Asafe testou de novo e o
+glitch continuava identico. A causa de verdade e outra, mais funda: `content-visibility:
+auto` DENTRO de `columns` (o CSS que faz o mosaico, ver `GradeFotos.tsx`) e uma combinacao
+ruim custe o que custar o palpite. `columns` BALANCEIA a altura das colunas o tempo todo — e
+um cartao trocando de "oculto" pra "tamanho real" no meio do scroll faz o navegador
+recalcular esse balanco, o que pode mover cartoes JA VISTOS de coluna, nao so o de baixo.
+Nenhum palpite de altura consertava isso porque o problema nunca foi o TAMANHO do palpite, e
+sim o RECALCULO em si.
+
+Corrigido de verdade removendo `content-visibility` inteiro do `CartaoFoto.tsx` e trocando a
+estrategia: em vez de todo cartao existir no DOM e o navegador fingir que os de fora da tela
+nao existem, agora so um PEDACO das fotos entra no DOM de cada vez (`GradeFotos.tsx`, `PASSO
+= 60`). Um `IntersectionObserver` observa uma sentinela no fim da lista renderizada e libera
+mais 60 cartoes quando ela se aproxima da tela (`rootMargin: 1200px`, pra nunca aparecer
+vazio rolando rapido). Cartao que ja apareceu nunca muda de tamanho depois — so cresce o fim
+da lista — entao nao ha o que a balanceamento de colunas rebalancear pra tras. O reset da
+contagem ao trocar de evento e por `key={evento.slug}` no `GradeFotos` dentro de `Evento.tsx`
+(forca remontar, zera o estado sozinho) em vez de um `useEffect` — evitou repetir o mesmo
+aviso de lint que ja existe, documentado, em `Imagem.tsx`.
+
+`npm run build` e `lint` limpos (so os dois avisos permanentes de sempre). **Licao**: quando
+o Asafe disser "continua igual, nao mudou nada" depois de um conserto, leve a serio — nao
+assuma que foi cache ou que o ajuste so precisava ser mais fino. Pode ser sintoma de outra
+causa, e foi.
+
+
 **Etapa 7 (Envio de fotos pelo painel + RAW) — código pronto e testado; falta a configuração
 do Asafe.** Reverte, a pedido dele (outubro de 2026, para os próximos eventos), a decisão da
 etapa 1 de "sem upload pelo navegador". Motivos e achados:
@@ -395,6 +570,7 @@ npm test                 # testes unitarios (node --test); os e2e nao estao no r
 npm run tipos:functions  # checagem de tipos das Functions (fora do tsc -b)
 npm run implantar        # constroi e publica o SITE (as fotos nao vao junto)
 npm run migrar-fotos     # uso unico, da etapa 7 (ver "Onde retomar")
+npm run converter-raw    # avulso (ExifTool vendorizado em ferramentas/): extrai a previa JPEG de RAW; o painel nao precisa
 npm run migrar:local     # aplica as migrations no D1 local
 npm run migrar           # aplica no D1 remoto (producao)
 ```
@@ -440,8 +616,16 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
 - **O lint tem dois avisos permanentes** — `set-state-in-effect` em `Imagem.tsx` (o caso
   da imagem em cache, explicado no comentário) e `only-export-components` em `button.tsx`
   (padrão do shadcn). São conhecidos. Não "conserte" nenhum dos dois.
-- **Antes de trocar de máquina, `git push`.** O remoto se chama `Trabalho`. Um commit
-  esquecido aqui vira, do outro lado, um erro que parece de credencial.
+- **Duas migrações com prefixo `0003`:** `0003_armazenamento.sql` (etapa 7) e
+  `0003_numero_amigavel.sql` (outro PC, agosto). As duas já estão aplicadas em produção, cada uma
+  com o próprio nome, e o wrangler controla pelo NOME — então **não renumere nenhuma**: a
+  renomeada pareceria nova e tentaria rodar de novo (`ADD COLUMN` duplicado). A próxima é `0004`.
+- **`git pull` ao começar e `git push` ao terminar, sempre.** O remoto se chama `Trabalho`. Já
+  aconteceu de dois PCs trabalharem em paralelo a partir da etapa 6 (um fez o envio pelo painel,
+  o outro a identidade e correções de foto), e o resultado foi um `git pull` com 14 arquivos em
+  conflito e um site publicado de um lado que não tinha o trabalho do outro: cada deploy
+  SUBSTITUI o anterior, então quem publica por último apaga as mudanças de quem não estava no
+  código dele. Antes de `npm run implantar`, confira `git status` e `git log Trabalho/main..` vazios.
 
 ---
 

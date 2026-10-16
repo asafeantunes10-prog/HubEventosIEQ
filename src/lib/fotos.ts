@@ -12,11 +12,13 @@
  *      diarias por miniatura, e um ZIP de 500 fotos comeria meio dia de quota
  *      de uma vez. Como asset estatico, esse teto simplesmente nao existe.
  *
- * O banco guarda so o `caminho` — `culto-jovens-2026/a1b2`, sem sufixo e sem
- * extensao. Montar a URL aqui, e so aqui, e o que torna barata uma mudanca
+ * O banco guarda so o `caminho` — `culto-jovens-2026/IMG_0007`, sem sufixo e
+ * sem extensao. Montar a URL aqui, e so aqui, e o que torna barata uma mudanca
  * futura: migrar para o R2 (se um dia houver cartao) ou quebrar o site em um
  * segundo projeto Pages passa a ser mexer nesta funcao, e em nenhuma tela.
  */
+
+import type { Foto } from './tipos'
 
 /**
  * Dois tamanhos, nao tres.
@@ -68,4 +70,16 @@ export function nomeParaDownload(
 ): string {
   const base = nomeOriginal?.replace(/\.[^.]+$/, '')
   return `${slugEvento}-${String(indice + 1).padStart(3, '0')}${base ? `-${base}` : ''}.webp`
+}
+
+/**
+ * `true` quando a capa e uma foto em pe (mais alta que larga).
+ *
+ * Importa porque o cabecalho do computador e largo e baixo: uma foto vertical
+ * esticada na largura inteira vira um zoom no meio do rosto, com o titulo por
+ * cima. Para capa vertical o computador usa foto de um lado e texto sobre o
+ * ceu do outro; para capa horizontal, a foto ocupa o cabecalho todo.
+ */
+export function ehCapaVertical(capa: Pick<Foto, 'largura' | 'altura'> | null | undefined): boolean {
+  return Boolean(capa?.largura && capa?.altura && capa.altura > capa.largura)
 }

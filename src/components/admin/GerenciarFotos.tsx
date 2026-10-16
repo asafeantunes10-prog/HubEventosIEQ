@@ -84,6 +84,7 @@ export function GerenciarFotos({ fotos, capaId, aoMoverFoto, aoDefinirCapa, aoAp
                 size="icon-xs"
                 variant="ghost"
                 onClick={() => aoApagarFoto(foto.id)}
+                className="text-muted-foreground hover:text-destructive"
                 aria-label={`Apagar a foto ${indice + 1}`}
               >
                 <Trash2 className="size-3.5" aria-hidden />

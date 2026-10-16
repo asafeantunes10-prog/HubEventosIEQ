@@ -25,6 +25,15 @@ type Props = {
   loading?: 'lazy' | 'eager'
   /** `high` para a imagem principal da tela inicial; o resto pode esperar. */
   prioridade?: boolean
+  /** `object-position` do recorte (ex.: "50% 30%"): decide o que sobra de uma foto cortada. */
+  posicao?: string
+  /**
+   * Fontes alternativas por faixa de tela (`<picture>`), para o celular baixar a
+   * miniatura e o computador a versao grande. `srcSet` + `sizes` nao servem
+   * aqui: o navegador escolhe pela densidade de pixels e, num celular de
+   * tela 3x, pediria a versao grande mesmo num cartao de 180px.
+   */
+  fontes?: { media: string; srcSet: string }[]
 }
 
 /**
@@ -53,6 +62,8 @@ export function Imagem({
   rotulo,
   loading = 'lazy',
   prioridade = false,
+  posicao,
+  fontes,
 }: Props) {
   const [estado, setEstado] = React.useState<'carregando' | 'pronta' | 'falhou'>('carregando')
   const ref = React.useRef<HTMLImageElement>(null)
@@ -105,25 +116,32 @@ export function Imagem({
           : undefined
       }
     >
-      <img
-        ref={ref}
-        src={src}
-        srcSet={srcSet}
-        sizes={sizes}
-        alt={alt}
-        width={largura}
-        height={altura}
-        loading={prioridade ? 'eager' : loading}
-        // `async` tira a decodificacao da thread principal: a rolagem nao trava.
-        decoding="async"
-        fetchPriority={prioridade ? 'high' : 'auto'}
-        onLoad={() => setEstado('pronta')}
-        onError={() => setEstado('falhou')}
-        className={cn(
-          'size-full object-cover transition-opacity duration-700 ease-out',
-          estado === 'pronta' ? 'opacity-100' : 'opacity-0'
-        )}
-      />
+      {/* `contents`: o <picture> nao pode virar uma caixa entre o wrapper e a imagem. */}
+      <picture className="contents">
+        {fontes?.map((fonte) => (
+          <source key={fonte.media} media={fonte.media} srcSet={fonte.srcSet} />
+        ))}
+        <img
+          ref={ref}
+          src={src}
+          srcSet={srcSet}
+          sizes={sizes}
+          alt={alt}
+          width={largura}
+          height={altura}
+          loading={prioridade ? 'eager' : loading}
+          // `async` tira a decodificacao da thread principal: a rolagem nao trava.
+          decoding="async"
+          fetchPriority={prioridade ? 'high' : 'auto'}
+          onLoad={() => setEstado('pronta')}
+          onError={() => setEstado('falhou')}
+          style={posicao ? { objectPosition: posicao } : undefined}
+          className={cn(
+            'size-full object-cover transition-opacity duration-700 ease-out',
+            estado === 'pronta' ? 'opacity-100' : 'opacity-0'
+          )}
+        />
+      </picture>
     </div>
   )
 }

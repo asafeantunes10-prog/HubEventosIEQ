@@ -94,7 +94,7 @@ export function PainelEventos() {
   return (
     <main className="lados-seguros topo-seguro mx-auto w-full max-w-4xl py-10 sm:py-14">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="font-heading text-3xl text-champanhe-claro">Eventos</h1>
+        <h1 className="font-heading text-3xl text-foreground">Eventos</h1>
         <Button asChild size="sm">
           <Link to="/admin/eventos/novo">
             <Plus data-icon="inline-start" />
@@ -130,7 +130,9 @@ export function PainelEventos() {
             {estado.eventos.map((evento) => (
               <li
                 key={evento.id}
-                className="superficie flex items-center gap-4 rounded-xl p-3 sm:p-4"
+                // No celular os botoes descem para uma segunda linha: na mesma linha
+                // do titulo eles espremiam o nome do evento ate sobrar "C...".
+                className="superficie flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl p-3 sm:flex-nowrap sm:p-4"
               >
                 <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                   {evento.capaCaminho ? (
@@ -148,7 +150,7 @@ export function PainelEventos() {
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate font-heading text-lg leading-snug text-champanhe-claro">
+                    <h2 className="truncate font-heading text-lg leading-snug text-foreground">
                       {evento.titulo}
                     </h2>
                     <SeloStatus status={evento.status} />
@@ -159,7 +161,7 @@ export function PainelEventos() {
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
                   <Button
                     size="sm"
                     variant="outline"
@@ -193,9 +195,9 @@ function SeloStatus({ status }: { status: EventoAdmin['status'] }) {
   return (
     <span
       className={cn(
-        'rounded-full px-2 py-0.5 text-[0.65rem] font-medium tracking-wide uppercase',
+        'rounded-full px-2.5 py-0.5 text-xs font-medium',
         status === 'publicado'
-          ? 'bg-primary/20 text-primary'
+          ? 'bg-primary text-primary-foreground'
           : 'bg-muted text-muted-foreground'
       )}
     >

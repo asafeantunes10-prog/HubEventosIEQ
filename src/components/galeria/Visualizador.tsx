@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
 import { urlFoto } from '@/lib/fotos'
 import type { Foto } from '@/lib/tipos'
 
@@ -113,7 +114,7 @@ export function Visualizador({ fotos, indice, temVersaoGrande, aoFechar, aoNaveg
       aria-modal="true"
       aria-label={`Foto ${indice + 1} de ${fotos.length}`}
       tabIndex={-1}
-      className="fixed inset-0 z-50 flex flex-col bg-black/95 backdrop-blur-sm focus:outline-none"
+      className="fixed inset-0 z-50 flex flex-col bg-[#07051f] focus:outline-none"
       onTouchStart={(e) => {
         inicioToque.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
       }}
@@ -134,32 +135,35 @@ export function Visualizador({ fotos, indice, temVersaoGrande, aoFechar, aoNaveg
         }
       }}
     >
-      <header className="flex items-center justify-between gap-4 px-4 py-3 text-white/70">
-        <span className="text-sm tabular-nums">
-          {indice + 1} / {fotos.length}
+      {/*
+        Celular: fechar a esquerda (alcance do polegar), contagem no meio e o
+        "Baixar foto" grande no pe da tela. Computador: o icone de baixar fica
+        aqui em cima, a direita.
+      */}
+      <header className="grid grid-cols-[3rem_1fr_3rem] items-center gap-2 px-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-white">
+        <button
+          type="button"
+          onClick={aoFechar}
+          aria-label="Fechar"
+          className="flex size-12 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <X className="size-[22px]" aria-hidden />
+        </button>
+
+        <span className="text-center text-[17px] font-medium tabular-nums">
+          {indice + 1} de {fotos.length}
         </span>
 
-        <div className="flex items-center gap-1">
-          {temVersaoGrande && (
-            <button
-              type="button"
-              onClick={() => aoBaixar(foto, indice)}
-              aria-label="Baixar esta foto"
-              className="flex size-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
-            >
-              <Download className="size-5" aria-hidden />
-            </button>
-          )}
-
+        {temVersaoGrande && (
           <button
             type="button"
-            onClick={aoFechar}
-            aria-label="Fechar"
-            className="flex size-11 items-center justify-center rounded-full text-white transition-colors hover:bg-white/10"
+            onClick={() => aoBaixar(foto, indice)}
+            aria-label="Baixar esta foto"
+            className="hidden size-12 items-center justify-center rounded-full transition-colors hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none md:flex"
           >
-            <X className="size-5" aria-hidden />
+            <Download className="size-5" aria-hidden />
           </button>
-        </div>
+        )}
       </header>
 
       {/* Clicar no vazio em volta da foto fecha — atalho que todo mundo tenta.
@@ -187,7 +191,7 @@ export function Visualizador({ fotos, indice, temVersaoGrande, aoFechar, aoNaveg
                 anterior()
               }}
               aria-label="Foto anterior"
-              className="absolute left-2 flex size-12 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/70 md:left-6"
+              className="absolute left-2 flex size-12 items-center justify-center rounded-full bg-[#0a0732]/60 text-white transition-colors hover:bg-[#0a0732]/85 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none md:left-6"
             >
               <ChevronLeft className="size-6" aria-hidden />
             </button>
@@ -199,13 +203,22 @@ export function Visualizador({ fotos, indice, temVersaoGrande, aoFechar, aoNaveg
                 proxima()
               }}
               aria-label="Próxima foto"
-              className="absolute right-2 flex size-12 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/70 md:right-6"
+              className="absolute right-2 flex size-12 items-center justify-center rounded-full bg-[#0a0732]/60 text-white transition-colors hover:bg-[#0a0732]/85 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none md:right-6"
             >
               <ChevronRight className="size-6" aria-hidden />
             </button>
           </>
         )}
       </div>
+
+      {temVersaoGrande && (
+        <div className="px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:hidden">
+          <Button size="lg" className="w-full" onClick={() => aoBaixar(foto, indice)}>
+            <Download className="size-[22px]" aria-hidden />
+            Baixar foto
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

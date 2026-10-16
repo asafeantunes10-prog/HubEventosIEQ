@@ -37,3 +37,7 @@ fotos
 .dev.vars
 .env*
 
+# Material bruto da identidade visual (PSDs de mais de 40 MB, ilustracoes, TTFs).
+# O que o site usa de verdade — logo, ceu e fontes em woff2 — ja foi convertido e
+# mora em `src/assets/identidade/`; esta pasta so serve de origem.
+Modelo-Layout-HubEventos/

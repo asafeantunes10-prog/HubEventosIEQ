@@ -263,7 +263,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
   if (estadoCarga.tipo === 'nao-encontrado') {
     return (
       <main className="lados-seguros topo-seguro mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-heading text-2xl text-champanhe-claro">Evento não encontrado</h1>
+        <h1 className="font-heading text-2xl text-foreground">Evento não encontrado</h1>
         <Button asChild size="lg" className="mt-8">
           <Link to="/admin">
             <ChevronLeft data-icon="inline-start" />
@@ -314,7 +314,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
         </Button>
       </div>
 
-      <h1 className="font-heading mt-4 text-3xl text-champanhe-claro">{evento.titulo}</h1>
+      <h1 className="font-heading mt-4 text-3xl text-foreground">{evento.titulo}</h1>
       <p className="mt-1 text-sm text-muted-foreground">/e/{evento.slug}</p>
 
       <form
@@ -364,7 +364,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
 
         <div className="flex items-center justify-end gap-3">
           {salvo && (
-            <span className="flex items-center gap-1.5 text-sm text-primary">
+            <span className="flex items-center gap-1.5 text-sm text-destaque">
               <Check className="size-4" aria-hidden />
               Salvo
             </span>
@@ -383,7 +383,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
       </form>
 
       <section className="mt-10">
-        <h2 className="font-heading text-xl text-champanhe-claro">Enviar fotos</h2>
+        <h2 className="font-heading text-xl text-foreground">Enviar fotos</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Escolha as fotos ou a pasta do evento. Enviar a mesma pasta de novo é seguro: o que já foi
           enviado é pulado.
@@ -409,7 +409,7 @@ function PaginaEditar({ id }: { id: string | undefined }) {
       </section>
 
       <section className="mt-10">
-        <h2 className="font-heading text-xl text-champanhe-claro">
+        <h2 className="font-heading text-xl text-foreground">
           Fotos <span className="text-base font-normal text-muted-foreground">({fotos.length})</span>
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">

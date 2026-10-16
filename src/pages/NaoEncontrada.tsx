@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { ChevronLeft, Signpost } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Marca } from '@/components/Marca'
 
 /**
  * Rota coringa (`path="*"` em `App.tsx`): o que aparece quando o endereco nao
@@ -24,11 +25,13 @@ import { Button } from '@/components/ui/button'
 export function NaoEncontrada() {
   return (
     <main className="lados-seguros topo-seguro mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center px-4 text-center">
+      <Marca className="mb-10 w-44" />
+
       <div className="flex size-14 items-center justify-center rounded-full bg-muted">
         <Signpost className="size-6 text-muted-foreground" aria-hidden />
       </div>
 
-      <h1 className="font-heading mt-6 text-2xl tracking-tight text-champanhe-claro">
+      <h1 className="font-heading mt-6 text-2xl tracking-tight text-foreground">
         Este endereço não existe
       </h1>
       <p className="mt-3 leading-relaxed text-muted-foreground">

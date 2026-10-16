@@ -80,13 +80,13 @@ export function BaixarTudo({ fotos, slugEvento }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Button
           onClick={() => void iniciar()}
           disabled={estado.tipo === 'baixando'}
-          size="sm"
-          variant="outline"
+          size="lg"
+          className="flex-1 md:flex-none"
         >
           {estado.tipo === 'baixando' ? (
             <>
@@ -102,7 +102,7 @@ export function BaixarTudo({ fotos, slugEvento }: Props) {
         </Button>
 
         {estado.tipo === 'baixando' && (
-          <Button onClick={() => controladorRef.current?.abort()} size="sm" variant="ghost">
+          <Button onClick={() => controladorRef.current?.abort()} variant="outline">
             <Ban className="size-4" aria-hidden />
             Cancelar
           </Button>
@@ -110,17 +110,17 @@ export function BaixarTudo({ fotos, slugEvento }: Props) {
       </div>
 
       {estado.tipo === 'baixando' && (
-        <div className="h-1 w-full max-w-56 overflow-hidden rounded-full bg-muted">
+        <div className="h-1.5 w-full max-w-72 overflow-hidden rounded-full bg-foreground/20">
           <div
-            className="h-full bg-primary transition-[width] duration-300"
+            className="h-full bg-destaque transition-[width] duration-300"
             style={{ width: `${(estado.concluidas / Math.max(estado.total, 1)) * 100}%` }}
           />
         </div>
       )}
 
       {estado.tipo === 'concluido' && (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Check className="size-3.5 text-primary" aria-hidden />
+        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Check className="size-3.5 text-destaque" aria-hidden />
           {estado.caiuParaDownloads
             ? 'Salvo na pasta de Downloads (não no local escolhido).'
             : 'ZIP salvo.'}
@@ -128,8 +128,8 @@ export function BaixarTudo({ fotos, slugEvento }: Props) {
       )}
 
       {estado.tipo === 'erro' && (
-        <p className="flex items-center gap-1.5 text-xs text-destructive">
-          <TriangleAlert className="size-3.5" aria-hidden />
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert className="size-4" aria-hidden />
           {estado.mensagem}
         </p>
       )}

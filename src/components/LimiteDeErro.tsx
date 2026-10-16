@@ -41,7 +41,7 @@ export class LimiteDeErro extends React.Component<Props, Estado> {
           <TriangleAlert className="size-6 text-destructive" aria-hidden />
         </div>
 
-        <h1 className="font-heading mt-6 text-2xl tracking-tight text-champanhe-claro">
+        <h1 className="font-heading mt-6 text-2xl tracking-tight text-foreground">
           Alguma coisa saiu do lugar
         </h1>
         <p className="mt-3 leading-relaxed text-muted-foreground">

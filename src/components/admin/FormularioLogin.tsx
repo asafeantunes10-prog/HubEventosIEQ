@@ -3,6 +3,7 @@ import { Loader2, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Marca } from '@/components/Marca'
 
 type Props = { aoEntrar: () => void }
 
@@ -53,7 +54,8 @@ export function FormularioLogin({ aoEntrar }: Props) {
 
   return (
     <main className="lados-seguros topo-seguro mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center px-4">
-      <h1 className="font-heading text-2xl text-champanhe-claro">Painel administrativo</h1>
+      <Marca className="mb-8 w-48" />
+      <h1 className="font-heading text-2xl text-foreground">Painel administrativo</h1>
       <p className="mt-2 text-sm text-muted-foreground">Entre com a senha do painel.</p>
 
       <form onSubmit={(evt) => void aoSubmeter(evt)} className="mt-6 flex flex-col gap-4">

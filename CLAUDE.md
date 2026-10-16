@@ -164,9 +164,9 @@ suspeitar de outra coisa.
   técnico; o README é para quem só quer usar o site pronto.
 
 - **Deliberadamente fora desta etapa:** `manifest.webmanifest`. Exigiria ícones (192px,
-  512px) que ainda não existem — o projeto não tem identidade visual própria ainda (fica
-  para depois, com o tema do molde por enquanto). Um manifesto sem ícone de verdade seria
-  só um arquivo a mais sem efeito prático.
+  512px) que ainda não existem (a identidade visual chegou na etapa 8, mas só como logo
+  horizontal; faltam os ícones quadrados). Um manifesto sem ícone de verdade seria só um
+  arquivo a mais sem efeito prático.
 
 **Testado com dados sintéticos no D1 LOCAL** (um evento e duas fotos falsas, nunca tocou
 produção) via `wrangler pages dev`: rotas conhecidas em 200, rota inválida em 404, `/e/:slug`
@@ -276,6 +276,36 @@ foto e o ZIP completo no celular; colar o link de um evento no Instagram e no Wh
 ver a prévia **de verdade** (o servidor já entrega a tag certa e a imagem responde 200 —
 falta só alguém com WhatsApp/Instagram confirmar o resultado); criar/editar um evento pelo
 painel a partir do celular.
+
+**Etapa 8 (Identidade visual "Avante & Sem Parar") — no ar.** O tema provisório (champanhe sobre
+preto quente, Cormorant + Jost) saiu. O desenho foi aprovado pelo Asafe como mockup antes de
+virar código (celular em primeiro lugar, computador sem ficar de lado) e a pasta
+`Modelo-Layout-HubEventos/` (logo, fundo de céu, fontes) foi a fonte da identidade.
+
+- **O que é a identidade:** logo "Avante & Sem Parar" (só a versão branca, o site é escuro), céu
+  azul-violeta da campanha, **Black Mango** (títulos e botões grandes; variável, `font-heading`),
+  **Womack** (só maiúsculas, decorativa: apenas títulos de seção curtos e a etiqueta "Mais
+  recente", `font-etiqueta`) e **Hanken Grotesk** (texto, datas, números — acrescentada por mim:
+  no tamanho de celular o "1" e o "0" da Black Mango se confundem em "537 fotos").
+- **Onde vive:** `src/index.css` é a única fonte das cores (índigo `#140f4d`, branco como cor de
+  ação, ciano `#5ce0ff` em detalhes) e das classes do céu (`ceu`, `ceu-largo`, `ceu-barra`,
+  `ceu-pc`, `veu-*`). Arquivos já convertidos em `src/assets/identidade/` (woff2, webp). A pasta
+  `Modelo-Layout-HubEventos/` (PSDs de 40 MB) está no `.gitignore` e só serve de origem; trocar a
+  identidade é trocar esses arquivos e os valores de `:root`, mais nada.
+- **A home** mostra o evento de **data mais recente** em destaque, com a etiqueta "Mais recente"
+  (não o campo `destaque` do banco, que continua só marcando um cartão); os outros vêm em
+  "Eventos anteriores" (grade de 2 colunas no celular, linhas largas no computador).
+- **Capa vertical x horizontal** (`CapaEvento.tsx`): a capa real do congresso é uma foto em pé.
+  Esticada na largura do cabeçalho do computador ela vira um zoom no rosto com o título por
+  cima — por isso, no computador, capa vertical fica num painel à direita e o texto sobre o céu;
+  capa horizontal ocupa o cabeçalho todo. No celular as duas preenchem o cartão.
+- **`cor_destaque` por evento** virou `--destaque` e só pinta elementos gráficos (a barra do ZIP);
+  nunca texto, porque uma cor escolhida no painel pode não ter contraste sobre o índigo. O botão
+  principal é branco com texto índigo e não depende dela.
+- **Painel** herdou o tema pelos tokens (`bg-card`, `text-muted-foreground`...) e ganhou uma barra
+  com o logo em `ProtegerAdmin.tsx`.
+- **Como foi conferido:** `vite preview` + Playwright (Chrome) em 390, 360 e 1440 px, repassando
+  `/api/*` para produção. Nenhuma tela tem rolagem lateral. Safari/iPhone de verdade não foi testado.
 
 ### Pendência pequena, herdada da etapa 1
 
@@ -391,6 +421,18 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
   processar todas as fotos. `consultar()` em `scripts/d1.mjs` já usa `--command` e tem uma
   guarda que falha na hora se o resumo voltar. No `--local` isso não acontece, então o bug
   só aparece contra produção.
+- **`wrangler pages secret put NOME`: o NOME vai na linha do comando e o VALOR no prompt.** Já
+  aconteceu de o token, o Account ID e até uma URL serem colados no lugar do nome e virarem
+  segredos com nome estranho (`secret list` mostra; `secret delete` apaga). E o
+  `npm run gerar-senha` gera senha **e** hash novos a cada execução: `SENHA_HASH` e
+  `SESSAO_SEGREDO` têm de vir da MESMA execução da senha que será digitada, senão o login só
+  diz "Senha incorreta". Segredo novo só vale depois de `npm run implantar`. Se o login
+  travar por tentativas, `delete from tentativas_login` no D1 remoto destrava na hora.
+- **Classes de `@layer components` perdem para utilitários e não aceitam variante.** `ceu`, `topo-seguro`,
+  `lados-amplos` etc. vivem em `src/index.css` na camada de componentes: um `pt-5` no mesmo elemento
+  apaga o `padding-top` de `topo-seguro` sem aviso (use `pt-[max(1.25rem,env(safe-area-inset-top))]`
+  direto), e `md:ceu-pc` não existe — por isso `ceu-pc` e `ceu-largo` carregam o próprio
+  `@media (min-width: 768px)` dentro. Para desligar o céu no computador use `md:bg-none`.
 - **Ordem do deploy importa.** Para qualquer mudança que mexa em `urlFoto()` ou no manifesto,
   as fotos precisam existir no destino ANTES de o site apontar para lá (foi a ordem da
   migração). E `wrangler pages dev` com Functions só mexe no D1 local — use `CF_API_BASE`

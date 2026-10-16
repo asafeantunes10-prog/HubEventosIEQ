@@ -103,7 +103,7 @@ function MiniaturaFoto({ foto, ehCapa }: { foto: FotoAdmin; ehCapa: boolean }) {
     <div
       className={cn(
         'relative aspect-square overflow-hidden rounded-lg bg-muted ring-2 ring-transparent',
-        ehCapa && 'ring-primary'
+        ehCapa && 'ring-destaque'
       )}
     >
       {foto.situacao !== 'no-ar' ? (

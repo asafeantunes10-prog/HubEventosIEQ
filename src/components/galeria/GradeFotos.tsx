@@ -30,6 +30,10 @@ type Props = {
  * `break-inside-avoid` em cada cartao (ver `CartaoFoto`) e o que impede uma
  * foto de ser partida ao meio entre duas colunas.
  *
+ * As fotos ficam coladas (4px no celular, 6px no computador) e a pagina quase
+ * nao tem margem em volta: e o mural que sustenta o visual, entao cada pixel de
+ * respiro entre fotos e pixel a menos de foto na tela pequena.
+ *
  * O layout `uniforme` e a alternativa por evento: grade quadrada, todas as
  * fotos do mesmo tamanho. Serve para eventos de fotos muito parecidas, onde o
  * mosaico so parece bagunca.
@@ -47,8 +51,8 @@ export function GradeFotos({ fotos, layout, temVersaoGrande, aoAbrir, aoBaixar }
     <div
       className={cn(
         layout === 'mosaico'
-          ? 'columns-2 gap-3 sm:gap-4 md:columns-3 xl:columns-4'
-          : 'grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4'
+          ? 'columns-2 gap-1 md:columns-3 md:gap-1.5 min-[1101px]:columns-4'
+          : 'grid grid-cols-2 gap-1 md:grid-cols-3 md:gap-1.5 min-[1101px]:grid-cols-4'
       )}
     >
       {fotos.map((foto, indice) => (

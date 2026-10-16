@@ -70,7 +70,7 @@ export function NovoEvento() {
         Todos os eventos
       </Link>
 
-      <h1 className="font-heading mt-4 text-3xl text-champanhe-claro">Novo evento</h1>
+      <h1 className="font-heading mt-4 text-3xl text-foreground">Novo evento</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Ele nasce como rascunho — publique quando as fotos estiverem prontas.
       </p>

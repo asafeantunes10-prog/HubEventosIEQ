@@ -9,58 +9,81 @@ import type { EventoComCapa } from '@/lib/tipos'
 type Props = { evento: EventoComCapa }
 
 /**
- * O cartao de evento na grade da home.
+ * Um evento anterior na lista da home.
  *
- * A capa usa a mesma versao `t` (400px) da grade de fotos — e so uma miniatura
- * num cartao pequeno, entao a versao grande seria banda jogada fora. Sem capa
- * (evento publicado antes da primeira foto subir), cai num icone: melhor que
- * puxar `urlFoto()` para um caminho vazio e deixar o navegador tentar um `GET`
- * que sempre vai dar 404.
+ * No celular e um cartao quadrado numa grade de duas colunas (a capa em cima,
+ * o nome embaixo); no computador vira uma linha larga, com a foto a esquerda e
+ * o nome grande a direita.
+ *
+ * A capa usa a miniatura `t` (400px) no celular — num cartao de 180px a versao
+ * grande seria banda jogada fora — e a versao grande `g` no computador, onde a
+ * foto ocupa uns 500px e a miniatura ficaria borrada. Evento arquivado so tem a
+ * `t`. Sem capa (evento publicado antes da primeira foto subir), cai num icone:
+ * melhor que puxar `urlFoto()` para um caminho vazio e deixar o navegador tentar
+ * um `GET` que sempre vai dar 404.
  */
 export function CartaoEvento({ evento }: Props) {
+  const capa = evento.capa
+
   return (
     <Link
       to={`/e/${evento.slug}`}
-      className="group focus-visible:ring-3 focus-visible:ring-primary/50 focus-visible:outline-none rounded-xl"
+      className="group flex flex-col gap-2.5 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-ring md:grid md:grid-cols-[5fr_7fr] md:items-center md:gap-14 md:rounded-none md:py-9"
     >
-      <article className="superficie overflow-hidden rounded-xl transition-transform duration-300 group-hover:-translate-y-0.5">
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-          {evento.capa ? (
-            <Imagem
-              src={urlFoto(evento.capa.caminho, 't')}
-              alt=""
-              lqip={evento.capa.lqip ?? undefined}
-              largura={evento.capa.largura ?? undefined}
-              altura={evento.capa.altura ?? undefined}
-              className="size-full transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex size-full items-center justify-center">
-              <ImageIcon className="size-8 text-muted-foreground/40" aria-hidden />
-            </div>
-          )}
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted md:aspect-[16/10] md:rounded-[14px]">
+        {capa ? (
+          <Imagem
+            src={urlFoto(capa.caminho, 't')}
+            fontes={
+              evento.arquivado
+                ? undefined
+                : [{ media: '(min-width: 768px)', srcSet: urlFoto(capa.caminho, 'g') }]
+            }
+            alt=""
+            lqip={capa.lqip ?? undefined}
+            largura={capa.largura ?? undefined}
+            altura={capa.altura ?? undefined}
+            className="size-full transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center">
+            <ImageIcon className="size-8 text-muted-foreground/40" aria-hidden />
+          </div>
+        )}
 
-          {evento.destaque && (
-            <span className="absolute top-3 left-3 rounded-full bg-primary px-2.5 py-1 text-[0.65rem] font-medium tracking-wide text-primary-foreground uppercase">
-              Destaque
-            </span>
-          )}
-        </div>
+        {evento.destaque && (
+          <span className="absolute top-2 left-2 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+            Destaque
+          </span>
+        )}
+      </div>
 
-        <div className="flex flex-col gap-1 p-4">
-          <h2 className="font-heading truncate text-lg leading-snug text-champanhe-claro">
-            {evento.titulo}
-          </h2>
+      <div className="flex min-w-0 flex-col gap-0.5 md:gap-3.5">
+        <h3 className="line-clamp-2 font-heading text-[19px] leading-[1.15] md:line-clamp-none md:text-[54px] md:leading-[1.05]">
+          {evento.titulo}
+        </h3>
 
-          <p className={cn('text-sm text-muted-foreground', !evento.dataEvento && 'invisible')}>
-            {evento.dataEvento ? formatarData(evento.dataEvento) : '—'}
+        {evento.dataEvento && (
+          <p className="text-[15px] text-muted-foreground md:text-[19px] md:text-foreground/90">
+            {formatarData(evento.dataEvento)}
           </p>
+        )}
 
-          <p className="mt-1 text-xs text-muted-foreground/70">
-            {evento.totalFotos} {evento.totalFotos === 1 ? 'foto' : 'fotos'}
-          </p>
-        </div>
-      </article>
+        <p className="text-[15px] text-muted-foreground md:text-[19px] md:text-foreground">
+          {evento.totalFotos} {evento.totalFotos === 1 ? 'foto' : 'fotos'}
+        </p>
+
+        {/* So no computador: no celular o cartao inteiro ja e o alvo do toque. */}
+        <span
+          className={cn(
+            'hidden text-lg font-semibold text-destaque underline underline-offset-[5px] md:inline',
+            'group-hover:text-foreground'
+          )}
+          aria-hidden
+        >
+          Ver as fotos
+        </span>
+      </div>
     </Link>
   )
 }

@@ -30,11 +30,11 @@ export function CartaoFoto({ foto, indice, temVersaoGrande, aoAbrir, aoBaixar }:
   const proporcao = foto.largura && foto.altura ? foto.largura / foto.altura : 2 / 3
 
   return (
-    <figure className="group relative mb-3 break-inside-avoid sm:mb-4">
+    <figure className="group relative mb-1 break-inside-avoid md:mb-1.5">
       <button
         type="button"
         onClick={() => aoAbrir(indice)}
-        className="relative block w-full cursor-zoom-in overflow-hidden rounded-lg bg-superficie/50 focus:ring-2 focus:ring-primary/50 focus:outline-none"
+        className="relative block w-full cursor-zoom-in overflow-hidden rounded-md bg-card outline-none focus-visible:ring-4 focus-visible:ring-ring md:rounded"
         style={{
           aspectRatio: String(proporcao),
           /*
@@ -98,8 +98,8 @@ export function CartaoFoto({ foto, indice, temVersaoGrande, aoAbrir, aoBaixar }:
           onClick={() => aoBaixar(foto, indice)}
           aria-label={`Baixar foto ${indice + 1}`}
           className={cn(
-            'absolute right-2 bottom-2 flex size-10 items-center justify-center rounded-full',
-            'bg-black/45 text-white backdrop-blur-sm transition-all duration-300 hover:bg-black/65',
+            'absolute right-2 bottom-2 flex size-11 items-center justify-center rounded-full',
+            'bg-[#0a0732]/80 text-white transition-all duration-300 hover:bg-[#0a0732] focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none',
             // No celular nao ha hover: o botao precisa estar sempre visivel, ou
             // ninguem descobre que da para baixar foto a foto. No desktop ele
             // aparece ao passar o mouse, deixando a foto limpa.

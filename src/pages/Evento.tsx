@@ -3,13 +3,16 @@ import { Link, useParams } from 'react-router'
 import { ChevronLeft, Loader2, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { CapaEvento, ehCapaVertical } from '@/components/CapaEvento'
+import { Marca } from '@/components/Marca'
+import { Rodape } from '@/components/Rodape'
 import { BaixarTudo } from '@/components/galeria/BaixarTudo'
 import { GradeFotos } from '@/components/galeria/GradeFotos'
 import { Visualizador } from '@/components/galeria/Visualizador'
 import { buscarEvento, ErroApi } from '@/lib/api'
 import { nomeParaDownload, urlFoto } from '@/lib/fotos'
 import { baixarUma } from '@/lib/zip'
-import { formatarData } from '@/lib/utils'
+import { cn, formatarData } from '@/lib/utils'
 import type { EventoComFotos, Foto } from '@/lib/tipos'
 
 type Estado =
@@ -97,7 +100,7 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
   if (estado.tipo === 'nao-encontrado') {
     return (
       <main className="lados-seguros topo-seguro mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center px-4 text-center">
-        <h1 className="font-heading text-2xl text-champanhe-claro">Não encontrei esse evento</h1>
+        <h1 className="font-heading text-2xl text-foreground">Não encontrei esse evento</h1>
         <p className="mt-3 leading-relaxed text-muted-foreground">
           O link pode estar errado, ou o evento ainda não foi publicado.
         </p>
@@ -133,44 +136,80 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
   */
   const temVersaoGrande = !evento.arquivado
 
+  // A capa escolhida no painel, ou a primeira foto quando ninguem escolheu.
+  const capa = fotos.find((f) => f.id === evento.capaId) ?? fotos[0] ?? null
+  const vertical = ehCapaVertical(capa)
+
   return (
-    <main
-      className="lados-seguros topo-seguro mx-auto w-full max-w-6xl py-10 sm:py-14"
-      // A personalizacao por evento: `cor_destaque` sobrescreve `--primary` so
-      // dentro deste wrapper. O design system inteiro e baseado em variaveis
-      // CSS, entao isto e uma linha de `style`, nao um tema paralelo.
-      style={evento.corDestaque ? ({ '--primary': evento.corDestaque } as React.CSSProperties) : undefined}
+    <div
+      // A personalizacao por evento: `cor_destaque` sobrescreve `--destaque` so
+      // dentro deste wrapper. So pinta elementos graficos (a barra do ZIP) — o
+      // design system inteiro e baseado em variaveis CSS, entao isto e uma linha
+      // de `style`, nao um tema paralelo.
+      style={evento.corDestaque ? ({ '--destaque': evento.corDestaque } as React.CSSProperties) : undefined}
     >
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ChevronLeft className="size-4" aria-hidden />
-        Todos os eventos
-      </Link>
+      <header className="relative">
+        {/*
+          No celular a barra fica sobre o ceu, acima da foto; no computador ela
+          flutua sobre a foto da capa (por isso `md:bg-none`: sem ceu atras).
+        */}
+        <nav className="ceu lados-amplos flex items-center justify-between gap-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:absolute md:inset-x-0 md:top-0 md:z-10 md:bg-none md:pt-[max(1.5rem,env(safe-area-inset-top))]">
+          <Link
+            to="/"
+            className="inline-flex min-h-12 items-center gap-1.5 rounded-full pr-2.5 text-[17px] font-medium outline-none focus-visible:ring-4 focus-visible:ring-ring"
+          >
+            <ChevronLeft className="size-[22px]" aria-hidden />
+            Todos os eventos
+          </Link>
 
-      <header className="mt-6 max-w-prose">
-        <h1 className="font-heading text-3xl tracking-tight text-champanhe-claro sm:text-5xl">
-          {evento.titulo}
-        </h1>
+          <Link to="/" className="rounded-md outline-none focus-visible:ring-4 focus-visible:ring-ring">
+            <Marca className="w-24 md:w-[150px]" />
+          </Link>
+        </nav>
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          {evento.dataEvento && `${formatarData(evento.dataEvento)} · `}
-          {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
-        </p>
+        <div
+          className={cn(
+            'relative aspect-square overflow-hidden bg-card md:aspect-auto md:min-h-[620px]',
+            // Capa vertical no computador: a foto fica a direita e o ceu atras do titulo.
+            vertical && 'ceu-pc'
+          )}
+        >
+          {capa && <CapaEvento capa={capa} arquivado={evento.arquivado} vertical={vertical} />}
 
-        {evento.descricao && (
-          <p className="mt-4 leading-relaxed text-muted-foreground">{evento.descricao}</p>
-        )}
+          <div className={cn('veu-inferior absolute inset-0', vertical && 'md:hidden')} aria-hidden />
+          <div
+            className={cn('veu-superior absolute inset-x-0 top-0 hidden h-44', !vertical && 'md:block')}
+            aria-hidden
+          />
+
+          <div className="lados-amplos absolute inset-x-0 bottom-0 pt-4 pb-[18px] md:pb-14">
+            <h1 className="font-heading text-[29px] leading-[1.08] text-balance md:max-w-[8.5em] md:text-[72px] md:leading-[1.02]">
+              {evento.titulo}
+            </h1>
+          </div>
+        </div>
+      </header>
+
+      <section className="lados-amplos flex flex-col gap-4 pt-[18px] pb-[22px] md:flex-row md:items-center md:justify-between md:border-b md:border-white/20 md:py-5">
+        <div className="flex flex-col gap-2">
+          <p className="text-[17px] text-foreground/90 md:text-[19px]">
+            {evento.dataEvento && `${formatarData(evento.dataEvento)}, `}
+            {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
+          </p>
+
+          {evento.descricao && (
+            <p className="max-w-prose leading-relaxed text-muted-foreground">{evento.descricao}</p>
+          )}
+        </div>
 
         {evento.permiteZip && temVersaoGrande && (
-          <div className="mt-5">
+          <div className="w-full md:w-auto">
             <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
           </div>
         )}
-      </header>
+      </section>
 
-      <div className="mt-10">
+      <main className="p-1 md:p-1.5">
         <GradeFotos
           fotos={fotos}
           layout={evento.layout}
@@ -178,7 +217,9 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
           aoAbrir={setIndiceAberto}
           aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
         />
-      </div>
+      </main>
+
+      <Rodape />
 
       {indiceAberto !== null && (
         <Visualizador
@@ -190,6 +231,6 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
           aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
         />
       )}
-    </main>
+    </div>
   )
 }

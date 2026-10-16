@@ -1,8 +1,10 @@
 import * as React from 'react'
+import { Link } from 'react-router'
 import { Loader2, LogOut } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { FormularioLogin } from '@/components/admin/FormularioLogin'
+import { Marca } from '@/components/Marca'
 
 type Estado = 'verificando' | 'autenticado' | 'nao-autenticado'
 
@@ -54,12 +56,30 @@ export function ProtegerAdmin({ children }: { children: React.ReactNode }) {
 
   return (
     <div>
-      <div className="lados-seguros flex justify-end pt-4">
-        <Button size="sm" variant="ghost" onClick={() => void aoSair()}>
-          <LogOut data-icon="inline-start" />
-          Sair
-        </Button>
-      </div>
+      {/* A barra do painel: o mesmo ceu e o mesmo logo do site, para o admin nao parecer outro produto. */}
+      <header className="ceu-barra border-b border-white/15">
+        <div className="lados-seguros topo-seguro mx-auto flex min-h-[76px] max-w-6xl items-center justify-between gap-4">
+          <Link
+            to="/admin"
+            className="flex items-center gap-4 rounded-md outline-none focus-visible:ring-4 focus-visible:ring-ring"
+          >
+            <Marca className="w-[116px]" />
+            <span className="hidden text-[17px] font-medium text-foreground/90 sm:inline">
+              Painel de fotos
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-1">
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/">Ver o site</Link>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => void aoSair()}>
+              <LogOut data-icon="inline-start" />
+              Sair
+            </Button>
+          </div>
+        </div>
+      </header>
       {children}
     </div>
   )

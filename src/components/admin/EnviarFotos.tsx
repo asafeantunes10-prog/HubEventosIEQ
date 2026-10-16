@@ -172,7 +172,7 @@ export function EnviarFotos({ eventoId, fotosAtuais, aoTerminar }: Props) {
         onDrop={aoSoltar}
         className={cn(
           'flex flex-col items-center gap-4 rounded-xl border-2 border-dashed border-border p-6 text-center transition-colors',
-          arrastando && 'border-primary bg-primary/5',
+          arrastando && 'border-destaque bg-destaque/10',
           (ocupado || bloqueado) && 'opacity-60'
         )}
       >
@@ -317,7 +317,7 @@ function LimiteDeArquivos({ estado }: { estado: EstadoArmazenamento }) {
       </div>
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
         <div
-          className={cn('h-full rounded-full bg-primary', apertado && 'bg-destructive')}
+          className={cn('h-full rounded-full bg-destaque', apertado && 'bg-destructive')}
           style={{ width: `${parte}%` }}
         />
       </div>
@@ -372,7 +372,7 @@ function Andamento({
         ) : erros > 0 || fase === 'cancelado' ? (
           <CircleAlert className="size-4 text-destructive" aria-hidden />
         ) : total > 0 ? (
-          <Check className="size-4 text-primary" aria-hidden />
+          <Check className="size-4 text-destaque" aria-hidden />
         ) : null}
         {titulo}
       </div>
@@ -380,7 +380,7 @@ function Andamento({
       {total > 0 && (
         <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-primary transition-[width]"
+            className="h-full rounded-full bg-destaque transition-[width]"
             style={{ width: `${porcentagem}%` }}
           />
         </div>
@@ -438,7 +438,7 @@ function ListaDeItens({ itens }: { itens: ItemDeEnvio[] }) {
               item.situacao === 'erro' ? 'text-destructive' : 'text-muted-foreground'
             )}
           >
-            {item.situacao === 'no-ar' && <Check className="size-3.5 text-primary" aria-hidden />}
+            {item.situacao === 'no-ar' && <Check className="size-3.5 text-destaque" aria-hidden />}
             {item.situacao === 'na-fila' && <Clock className="size-3.5" aria-hidden />}
             {(item.situacao === 'processando' || item.situacao === 'enviando') && (
               <Loader2 className="size-3.5 animate-spin" aria-hidden />

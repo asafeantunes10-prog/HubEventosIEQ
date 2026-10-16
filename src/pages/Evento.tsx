@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, useParams } from 'react-router'
-import { ChevronLeft, Loader2, TriangleAlert } from 'lucide-react'
+import { CalendarDays, ChevronLeft, Images, Loader2, TriangleAlert } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { CapaEvento } from '@/components/CapaEvento'
@@ -153,7 +153,7 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
           No celular a barra fica sobre o ceu, acima da foto; no computador ela
           flutua sobre a foto da capa (por isso `md:bg-none`: sem ceu atras).
         */}
-        <nav className="ceu lados-amplos flex items-center justify-between gap-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:absolute md:inset-x-0 md:top-0 md:z-10 md:bg-none md:pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <nav className="ceu lados-amplos flex items-center justify-between gap-3 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 md:absolute md:inset-x-0 md:top-0 md:z-10 md:bg-transparent md:bg-none md:pt-[max(1.5rem,env(safe-area-inset-top))]">
           <Link
             to="/"
             className="inline-flex min-h-12 items-center gap-1.5 rounded-full pr-2.5 text-[17px] font-medium outline-none focus-visible:ring-4 focus-visible:ring-ring"
@@ -182,7 +182,7 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
             aria-hidden
           />
 
-          <div className="lados-amplos absolute inset-x-0 bottom-0 pt-4 pb-[18px] md:pb-14">
+          <div className="lados-amplos absolute inset-x-0 bottom-0 pt-4 pb-12 md:pb-20">
             <h1 className="font-heading text-[29px] leading-[1.08] text-balance md:max-w-[8.5em] md:text-[72px] md:leading-[1.02]">
               {evento.titulo}
             </h1>
@@ -190,37 +190,78 @@ function PaginaEvento({ slug }: { slug: string | undefined }) {
         </div>
       </header>
 
-      <section className="lados-amplos flex flex-col gap-4 pt-[18px] pb-[22px] md:flex-row md:items-center md:justify-between md:border-b md:border-white/20 md:py-5">
-        <div className="flex flex-col gap-2">
-          <p className="text-[17px] text-foreground/90 md:text-[19px]">
-            {evento.dataEvento && `${formatarData(evento.dataEvento)}, `}
-            {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
-          </p>
+      {/*
+        A folha: sobe por cima do fim do hero (`-mt-*`) e junta o que e "sobre o
+        evento" (o painel de informacoes) e o que e "as fotos" (o mural), cada um
+        com a sua area. O titulo do hero tem folga embaixo (`pb-12`/`pb-20`) maior
+        que a subida, para a folha nunca cobrir o nome do evento.
+      */}
+      <div className="folha relative z-10 -mt-7 md:-mt-10">
+        <section className="lados-amplos pt-5 md:pt-8" aria-label="Sobre o evento">
+          <div className="mx-auto max-w-[1328px]">
+            <div className="flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.06] p-4 md:flex-row md:items-center md:justify-between md:gap-6 md:p-5">
+              <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:gap-8">
+                {evento.dataEvento && (
+                  <p className="flex items-center gap-2.5 text-base md:text-lg">
+                    <CalendarDays className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                    {formatarData(evento.dataEvento)}
+                  </p>
+                )}
 
-          {evento.descricao && (
-            <p className="max-w-prose leading-relaxed text-muted-foreground">{evento.descricao}</p>
-          )}
-        </div>
+                <p className="flex items-center gap-2.5 text-base md:text-lg">
+                  <Images className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+                  {fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}
+                </p>
+              </div>
 
-        {evento.permiteZip && temVersaoGrande && (
-          <div className="w-full md:w-auto">
-            <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
+              {evento.permiteZip && temVersaoGrande && (
+                <div className="w-full md:w-auto">
+                  <BaixarTudo fotos={fotos} slugEvento={evento.slug} />
+                </div>
+              )}
+            </div>
+
+            {evento.descricao && (
+              <p className="mt-4 max-w-prose leading-relaxed text-muted-foreground">
+                {evento.descricao}
+              </p>
+            )}
           </div>
-        )}
-      </section>
+        </section>
 
-      <main className="p-1 md:p-1.5">
-        <GradeFotos
-          // Forca remontar ao trocar de evento: zera sozinho a contagem de cartoes
-          // revelados (ver GradeFotos) sem precisar de um efeito so para isso.
-          key={evento.slug}
-          fotos={fotos}
-          layout={evento.layout}
-          temVersaoGrande={temVersaoGrande}
-          aoAbrir={setIndiceAberto}
-          aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
-        />
-      </main>
+        <section aria-labelledby="titulo-fotos" className="pt-7 pb-8 md:pt-12 md:pb-14">
+          <div className="lados-amplos mb-3 md:mb-5">
+            <div className="mx-auto flex max-w-[1328px] items-baseline justify-between gap-4">
+              <h2
+                id="titulo-fotos"
+                className="font-etiqueta text-2xl leading-[1.1] font-normal tracking-[0.02em] md:text-[32px]"
+              >
+                Todas as fotos
+              </h2>
+
+              {fotos.length > 0 && (
+                <span className="text-right text-sm text-muted-foreground md:text-base">
+                  <span className="md:hidden">Toque</span>
+                  <span className="hidden md:inline">Clique</span> para ampliar
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="p-1 md:p-1.5">
+            <GradeFotos
+              // Forca remontar ao trocar de evento: zera sozinho a contagem de cartoes
+              // revelados (ver GradeFotos) sem precisar de um efeito so para isso.
+              key={evento.slug}
+              fotos={fotos}
+              layout={evento.layout}
+              temVersaoGrande={temVersaoGrande}
+              aoAbrir={setIndiceAberto}
+              aoBaixar={(foto, indice) => void aoBaixarFoto(foto, indice, evento.slug, temVersaoGrande)}
+            />
+          </div>
+        </section>
+      </div>
 
       <Rodape />
 

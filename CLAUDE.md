@@ -203,8 +203,8 @@ propagação do deploy pelos PoPs da Cloudflare, não um bug de lógica.
 >   a versão antiga só apagava o registro e deixava o arquivo órfão.
 > - **"Identidade visual chegou"** (fundos `.fundo-identidade` e `.fundo-evento`, selo no cabeçalho):
 >   substituída pela etapa 8. As peças em `src/assets/marca/` (brasão do Diaconato, GMH4, selo da
->   Quadrangular MS) continuam no repositório sem uso em tela; **o favicon do selo da Quadrangular
->   MS (`public/favicon-32.png`, `favicon-192.png`, `apple-touch-icon.png`) continua valendo**.
+>   Quadrangular MS) continuam no repositório sem uso em tela. O favicon do selo da Quadrangular MS
+>   que esse PC criou foi **substituído depois pelo "A" da logo** (ver etapa 8, "Ícone da aba").
 > - **`scripts/converter-raw.mjs`** (ExifTool) ficou como ferramenta avulsa; o painel lê RAW sozinho.
 > - **Continua valendo:** a grade que só monta 60 fotos por vez (`GradeFotos.tsx`) e a lição sobre
 >   `content-visibility` dentro de `columns`; a rota `/api/eventos/:slug` com uma consulta só; o texto
@@ -477,6 +477,22 @@ virar código (celular em primeiro lugar, computador sem ficar de lado) e a past
 - **`cor_destaque` por evento** virou `--destaque` e só pinta elementos gráficos (a barra do ZIP);
   nunca texto, porque uma cor escolhida no painel pode não ter contraste sobre o índigo. O botão
   principal é branco com texto índigo e não depende dela.
+- **Ícone da aba:** o "A" com o laço da logo, em quadrado azul-violeta (`public/icone-32.png`,
+  `icone-48.png`, `icone-192.png`, `icone-apple.png` e `favicon.ico`, ligados em `index.html`). A logo
+  inteira é larga demais para 16 px. O "A" foi recortado da logo com um polígono (a perna direita do A
+  encosta no "v" e na cruz, então um corte reto pega pedaços deles). Os nomes são `icone-*` e não
+  `favicon-*` **de propósito**: o navegador guarda o ícone da aba em cache por muito tempo e um arquivo
+  com o mesmo nome continuaria mostrando o antigo (a câmera).
+- **Três camadas por página** (`index.css`): cabeçalho (céu ou foto) → `.folha` (índigo um pouco mais
+  claro, cantos de cima arredondados, sobe por cima do cabeçalho com `-mt-7`/`-mt-10`) →
+  `.faixa-rodape` (índigo mais escuro). Foi a resposta a "as partes estão mal divididas": antes, céu,
+  lista e rodapé tinham o mesmo índigo e viravam uma tira só. O título do cabeçalho precisa de folga
+  embaixo (`pb-12`/`pb-20`) maior que a subida da folha, senão ela cobre o nome do evento. Na home os
+  eventos anteriores são cartões com borda (2 colunas no celular, 3 a 4 no computador); na página do
+  evento a folha leva o painel de informações (data, nº de fotos, "Baixar tudo") e o mural.
+- **A barra de cima da página do evento no computador flutua sobre a foto** (`md:absolute`), então
+  precisa de `md:bg-transparent` além de `md:bg-none`: o `.ceu` deixa uma `background-color` opaca
+  que, sozinha, cobria o topo da foto.
 - **Painel** herdou o tema pelos tokens (`bg-card`, `text-muted-foreground`...) e ganhou uma barra
   com o logo em `ProtegerAdmin.tsx`.
 - **Como foi conferido:** `vite preview` + Playwright (Chrome) em 390, 360 e 1440 px, repassando

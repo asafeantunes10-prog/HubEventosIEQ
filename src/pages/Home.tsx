@@ -86,7 +86,7 @@ export function Home() {
       */}
       <header
         className={cn(
-          'ceu lados-amplos relative pt-[max(1.25rem,env(safe-area-inset-top))] pb-10',
+          'ceu lados-amplos relative pt-[max(1.25rem,env(safe-area-inset-top))] pb-12',
           maisRecente &&
             'md:min-h-[820px] md:pt-[max(1.75rem,env(safe-area-inset-top))] md:pb-0',
           // Capa horizontal: a foto cobre o cabecalho (sem ceu atras). Vertical: o ceu fica.
@@ -107,8 +107,14 @@ export function Home() {
         {maisRecente && <Destaque evento={maisRecente} vertical={vertical} />}
       </header>
 
-      <div className="ceu-largo">
-        <main className="lados-amplos pt-1 pb-11 md:pt-24 md:pb-12">
+      {/*
+        A folha: onde mora a lista. Sobe por cima do fim do cabecalho (`-mt-*`) com
+        os cantos de cima arredondados, e e o que separa "o destaque" de "o resto".
+        O cabecalho tem folga embaixo (`pb-12`) maior que a subida, para a folha
+        nunca encostar no cartao do destaque.
+      */}
+      <div className="folha relative z-10 -mt-7 md:-mt-10">
+        <main className="lados-amplos pt-7 pb-10 md:pt-14 md:pb-16">
           {estado.tipo === 'carregando' && (
             <div className="flex items-center gap-3 py-12 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -132,25 +138,40 @@ export function Home() {
             </div>
           )}
 
-          {anteriores.length > 0 && (
-            <div className="mx-auto max-w-[1328px]">
-              <h2 className="mb-[18px] font-etiqueta text-[27px] leading-[1.1] font-normal tracking-[0.02em] md:mb-10 md:text-[40px]">
-                Eventos anteriores
-              </h2>
+          {estado.tipo === 'pronto' && ordenados.length > 0 && anteriores.length === 0 && (
+            <p className="text-center text-base text-muted-foreground">
+              Este é o único evento por enquanto. Os próximos aparecem aqui.
+            </p>
+          )}
 
-              <ul className="grid grid-cols-2 gap-x-3 gap-y-6 md:block">
+          {anteriores.length > 0 && (
+            <section className="mx-auto max-w-[1328px]" aria-labelledby="titulo-anteriores">
+              <div className="mb-4 flex items-baseline justify-between gap-4 md:mb-8">
+                <h2
+                  id="titulo-anteriores"
+                  className="font-etiqueta text-[27px] leading-[1.1] font-normal tracking-[0.02em] md:text-[36px]"
+                >
+                  Eventos anteriores
+                </h2>
+
+                <span className="shrink-0 text-sm text-muted-foreground md:text-base">
+                  {anteriores.length} {anteriores.length === 1 ? 'evento' : 'eventos'}
+                </span>
+              </div>
+
+              <ul className="grid grid-cols-2 gap-3 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                 {anteriores.map((evento) => (
-                  <li key={evento.id} className="md:border-t md:border-white/20 md:last:border-b">
+                  <li key={evento.id}>
                     <CartaoEvento evento={evento} />
                   </li>
                 ))}
               </ul>
-            </div>
+            </section>
           )}
         </main>
-
-        <Rodape />
       </div>
+
+      <Rodape />
     </div>
   )
 }

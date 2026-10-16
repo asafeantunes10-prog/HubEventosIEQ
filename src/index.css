@@ -190,21 +190,32 @@
     }
 
   /*
-    Secao logo abaixo do hero no computador: o ceu horizontal aparece e se
-    dissolve no indigo. Nasce em #0a0732 (o tom em que o hero termina) para a
-    emenda entre os dois nao aparecer. No celular a secao e lisa.
+    AS TRES CAMADAS DA PAGINA. Antes, ceu, lista e rodape tinham o mesmo indigo e
+    se misturavam numa tira so, sem comeco nem fim de secao. Agora:
+
+      1. cabecalho  -> o ceu da campanha / a foto de capa;
+      2. `.folha`   -> onde mora o conteudo: um indigo um pouco mais claro, com os
+                       cantos de cima arredondados, subindo por cima do cabecalho
+                       (o `-mt-*` fica no ponto de uso, nao aqui);
+      3. `.faixa-rodape` -> o indigo mais escuro, so o fecho da pagina.
+
+    A diferenca de tom e pequena de proposito: separa sem virar tres paginas.
   */
-  .ceu-largo { background-color: var(--background); }
+  .folha {
+    position: relative;
+    background-color: #1a1563;
+    border-top: 1px solid rgb(255 255 255 / 0.16);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -18px 40px -20px rgb(0 0 0 / 0.6);
+    }
+
+  .faixa-rodape {
+    background-color: #0d0a38;
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+    }
 
   @media (min-width: 768px) {
-    .ceu-largo {
-      background-image:
-        linear-gradient(to bottom, #0a0732 0%, rgb(20 15 77 / 0.55) 14%, rgb(20 15 77 / 0.9) 60%, var(--background) 100%),
-        url('./assets/identidade/ceu.webp');
-      background-size: cover;
-      background-position: center top;
-      background-repeat: no-repeat;
-      }
+    .folha { border-radius: 40px 40px 0 0; }
   }
 
   /* Veus que garantem contraste do texto sobre qualquer foto de capa. */

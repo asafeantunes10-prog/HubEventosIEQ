@@ -1,15 +1,16 @@
 import { Marca } from '@/components/Marca'
 
 /**
- * O fecho das telas publicas: repete a promessa do site (sem conta, sem senha,
- * sem link que expira) para quem chegou ate o fim da rolagem — e quem rola
- * ate aqui costuma estar decidindo se pode compartilhar o link com outra
- * pessoa.
+ * O fecho das telas publicas, numa faixa mais escura que o resto (`.faixa-rodape`)
+ * para marcar onde o conteudo acaba.
+ *
+ * No celular a igreja vem separada por uma linha, num bloco proprio; no
+ * computador as duas partes ficam lado a lado.
  */
 export function Rodape() {
   return (
-    <footer className="lados-amplos pt-10 pb-[max(2.25rem,env(safe-area-inset-bottom))] md:pt-12 md:pb-[max(4.5rem,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-[1328px] flex-wrap items-end justify-between gap-x-12 gap-y-6">
+    <footer className="faixa-rodape lados-amplos pt-9 pb-[max(2.25rem,env(safe-area-inset-bottom))] md:pt-12 md:pb-[max(3.5rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex max-w-[1328px] flex-col gap-6 md:flex-row md:items-end md:justify-between md:gap-12">
         <div className="flex flex-col gap-4">
           <Marca decorativo className="w-[150px] md:w-[180px]" />
           <p className="max-w-[36ch] text-base leading-relaxed text-muted-foreground md:max-w-[46ch] md:text-lg">
@@ -18,7 +19,7 @@ export function Rodape() {
           </p>
         </div>
 
-        <p className="text-[15px] text-muted-foreground md:text-base">
+        <p className="border-t border-white/10 pt-5 text-[15px] text-muted-foreground md:border-t-0 md:pt-0 md:text-base">
           Igreja do Evangelho Quadrangular
         </p>
       </div>

@@ -490,6 +490,12 @@ virar código (celular em primeiro lugar, computador sem ficar de lado) e a past
   embaixo (`pb-12`/`pb-20`) maior que a subida da folha, senão ela cobre o nome do evento. Na home os
   eventos anteriores são cartões com borda (2 colunas no celular, 3 a 4 no computador); na página do
   evento a folha leva o painel de informações (data, nº de fotos, "Baixar tudo") e o mural.
+- **O topo da home no celular** (visto no aparelho do Asafe, 393 px): logo centralizada (188 px) com a
+  legenda "Fotos dos eventos" em voz baixa embaixo (era um título grande colado na logo), céu com véu
+  escuro por cima (o céu cru é ciano brilhante e granulado e o traço fino da logo perdia contraste),
+  cartão do destaque com `mt-8`, anel e sombra, e 28 px de ar até a folha (`pb-14` no cabeçalho contra
+  `-mt-7` da folha). Conferir em 393 px com `deviceScaleFactor` 2 antes de dar um topo por bom: em 390 px
+  de largura a captura a olho nu engana.
 - **A barra de cima da página do evento no computador flutua sobre a foto** (`md:absolute`), então
   precisa de `md:bg-transparent` além de `md:bg-none`: o `.ceu` deixa uma `background-color` opaca
   que, sozinha, cobria o topo da foto.

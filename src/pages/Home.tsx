@@ -86,23 +86,33 @@ export function Home() {
       */}
       <header
         className={cn(
-          'ceu lados-amplos relative pt-[max(1.25rem,env(safe-area-inset-top))] pb-12',
+          'ceu lados-amplos relative pt-[max(2rem,env(safe-area-inset-top))] pb-14',
           maisRecente &&
             'md:min-h-[820px] md:pt-[max(1.75rem,env(safe-area-inset-top))] md:pb-0',
           // Capa horizontal: a foto cobre o cabecalho (sem ceu atras). Vertical: o ceu fica.
           maisRecente && (vertical ? 'ceu-pc' : 'md:bg-none')
         )}
       >
-        <Marca className="relative z-10 w-56 max-w-[70%] md:w-[200px]" />
+        {/*
+          Logo e legenda formam UM bloco, centralizado no celular: antes a logo
+          grande e o titulo "Fotos dos eventos" ficavam colados, o titulo
+          competia com ela em tamanho e os dois encostavam no cartao. A logo ja
+          diz quem somos; a legenda so diz o que e este lugar, em voz baixa.
+        */}
+        <div className="flex flex-col items-center gap-3 md:items-start md:gap-0">
+          <Marca className="relative z-10 w-[188px] md:w-[200px]" />
 
-        <h1
-          className={cn(
-            'mt-[22px] font-heading text-[30px] leading-[1.1]',
-            maisRecente && 'md:sr-only'
-          )}
-        >
-          Fotos dos eventos
-        </h1>
+          <h1
+            className={cn(
+              'text-center font-sans text-base font-medium text-foreground/90',
+              maisRecente
+                ? 'md:sr-only'
+                : 'md:mt-6 md:text-left md:font-heading md:text-[44px] md:leading-[1.1] md:font-semibold'
+            )}
+          >
+            Fotos dos eventos
+          </h1>
+        </div>
 
         {maisRecente && <Destaque evento={maisRecente} vertical={vertical} />}
       </header>
@@ -110,8 +120,8 @@ export function Home() {
       {/*
         A folha: onde mora a lista. Sobe por cima do fim do cabecalho (`-mt-*`) com
         os cantos de cima arredondados, e e o que separa "o destaque" de "o resto".
-        O cabecalho tem folga embaixo (`pb-12`) maior que a subida, para a folha
-        nunca encostar no cartao do destaque.
+        O cabecalho tem folga embaixo (`pb-14`) maior que a subida (`-mt-7`), para a
+        folha nunca encostar no cartao do destaque: sobram 28px de ar entre os dois.
       */}
       <div className="folha relative z-10 -mt-7 md:-mt-10">
         <main className="lados-amplos pt-7 pb-10 md:pt-14 md:pb-16">
@@ -197,7 +207,7 @@ function Destaque({ evento, vertical }: { evento: EventoComCapa; vertical: boole
   return (
     <Link
       to={`/e/${evento.slug}`}
-      className="group relative mt-4 block aspect-[4/5] overflow-hidden rounded-[22px] bg-card outline-none focus-visible:ring-4 focus-visible:ring-ring md:absolute md:inset-0 md:mt-0 md:aspect-auto md:rounded-none md:bg-transparent"
+      className="group relative mt-8 block aspect-[4/5] overflow-hidden rounded-[24px] bg-card shadow-[0_24px_48px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/20 outline-none focus-visible:ring-4 focus-visible:ring-ring md:absolute md:inset-0 md:mt-0 md:aspect-auto md:rounded-none md:bg-transparent md:shadow-none md:ring-0"
     >
       {capa && <CapaEvento capa={capa} arquivado={evento.arquivado} vertical={vertical} />}
 

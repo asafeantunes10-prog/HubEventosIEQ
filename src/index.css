@@ -146,7 +146,11 @@
 
 @layer components {
   /*
-    Ceu da campanha atras de cabecalhos. No celular usa o recorte vertical; a
+    Ceu da campanha atras de cabecalhos. O veu escuro por cima do ceu NAO e enfeite:
+    o ceu cru e ciano brilhante e granulado, e sobre ele o traco fino da logo e o
+    texto pequeno perdiam contraste (visto no celular de verdade).
+
+    No celular usa o recorte vertical; a
     partir de `md` o horizontal. O degrade final nao e enfeite: ele funde a
     imagem no indigo da pagina, para o fim do ceu nao virar uma emenda dura.
     So pintam o TOPO da pagina — repetir o ceu por uma pagina de 500 fotos
@@ -155,7 +159,7 @@
   .ceu {
     background-color: var(--background);
     background-image:
-      linear-gradient(to bottom, rgb(20 15 77 / 0) 0%, rgb(20 15 77 / 0) 45%, var(--background) 100%),
+      linear-gradient(to bottom, rgb(20 15 77 / 0.42) 0%, rgb(20 15 77 / 0.3) 38%, rgb(20 15 77 / 0.62) 72%, var(--background) 100%),
       url('./assets/identidade/ceu-retrato.webp');
     background-size: cover;
     background-position: center top;

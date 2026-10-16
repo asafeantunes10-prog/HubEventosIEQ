@@ -15,6 +15,7 @@
     "migrar-fotos": "node scripts/migrar-fotos.mjs",
     "converter-raw": "node scripts/converter-raw.mjs",
     "gerar-senha": "node scripts/gerar-senha.mjs",
+    "trocar-senha": "node scripts/trocar-senha.mjs",
     "migrar:local": "wrangler d1 migrations apply hub-eventos-ieq --local",
     "migrar": "wrangler d1 migrations apply hub-eventos-ieq --remote"
   },

@@ -60,13 +60,22 @@ Em **`/admin`**, protegido por uma **senha única** (sem conta por pessoa): quem
 senha envia e edita. Para dar acesso a mais alguém, passe a senha; para tirar o acesso de
 todo mundo, troque-a.
 
+Para trocar a senha, abra o terminal do VS Code e rode:
+
 ```bash
-npm run gerar-senha "sua-senha-nova"
+npm run trocar-senha
 ```
 
-O comando imprime dois `wrangler pages secret put` para rodar — é isso que grava a senha
-nova na Cloudflare. Sem argumento, ele sorteia uma senha forte. Depois rode
-`npm run implantar` para o login valer.
+Ele pede a senha nova (escondida enquanto você digita, e depois uma segunda vez para
+confirmar), grava na Cloudflare e publica o site para a troca valer. Use **pelo menos 12
+caracteres**; uma frase com espaços serve ("minha igreja 2026 avante"). A senha nunca aparece
+na tela nem fica em arquivo. Se a pasta tiver mudanças sem commit, ou o GitHub tiver algo que
+este computador não tem, o comando grava a senha mas **não publica sozinho** e avisa o que
+fazer. Quem trocar a senha desloga todo mundo.
+
+Se preferir uma senha sorteada (20 caracteres, sem letras confusas), `npm run gerar-senha`
+mostra uma e imprime os dois comandos que gravam na Cloudflare; aí é só ter cuidado de colar
+cada valor no lugar certo.
 
 ## Configurar o envio de fotos (uma vez só)
 
@@ -132,7 +141,8 @@ npm test                 # testes unitários (node --test)
 npm run tipos:functions  # checagem de tipos das Functions
 npm run implantar        # constrói e publica o SITE (as fotos não vão junto)
 npm run migrar-fotos     # uso único, ver "Configurar o envio de fotos"
-npm run gerar-senha      # gera (ou troca) a senha do painel
+npm run trocar-senha     # troca a senha do painel (pede, grava e publica)
+npm run gerar-senha      # sorteia uma senha e imprime os comandos para gravar
 npm run migrar:local     # aplica as migrações no banco local
 npm run migrar           # aplica as migrações em produção
 ```

@@ -549,8 +549,9 @@ dele — imprima os comandos e espere.
 
 O Cloudflare Access **não faz mais parte do plano** (ver a regra 1) — não peça para o
 Asafe configurar Access. A senha do painel já está gerada e configurada
-(`SENHA_HASH`/`SESSAO_SEGREDO`, secrets na Cloudflare); trocá-la é rodar
-`npm run gerar-senha` e aplicar os dois comandos que ele imprime.
+(`SENHA_HASH`/`SESSAO_SEGREDO`, secrets na Cloudflare). **Quem troca é o Asafe, no terminal dele:**
+`npm run trocar-senha` (pede a senha escondida, grava os dois secrets e publica). Não peça a senha
+dele no chat nem a invente por ele: ela fica só no terminal dele.
 
 ### 4. Convenção de idioma
 
@@ -591,6 +592,8 @@ npm run lint             # oxlint
 npm test                 # testes unitarios (node --test); os e2e nao estao no repo
 npm run tipos:functions  # checagem de tipos das Functions (fora do tsc -b)
 npm run implantar        # constroi e publica o SITE (as fotos nao vao junto)
+npm run trocar-senha     # o Asafe troca a senha do painel: pede, grava os secrets e publica
+npm run gerar-senha      # sorteia uma senha e imprime os comandos (colar e o ponto fraco; prefira trocar-senha)
 npm run migrar-fotos     # uso unico, da etapa 7 (ver "Onde retomar")
 npm run converter-raw    # avulso (ExifTool vendorizado em ferramentas/): extrai a previa JPEG de RAW; o painel nao precisa
 npm run migrar:local     # aplica as migrations no D1 local
@@ -624,7 +627,9 @@ Wrangler funcionam. O erro que aparece não deixa isso claro.
   segredos com nome estranho (`secret list` mostra; `secret delete` apaga). E o
   `npm run gerar-senha` gera senha **e** hash novos a cada execução: `SENHA_HASH` e
   `SESSAO_SEGREDO` têm de vir da MESMA execução da senha que será digitada, senão o login só
-  diz "Senha incorreta". Segredo novo só vale depois de `npm run implantar`. Se o login
+  diz "Senha incorreta". **`npm run trocar-senha` existe por causa disso:** nada de copiar e colar,
+  o hash e a chave nascem juntos e vão direto para a Cloudflare. `functions/lib/senha.test.ts`
+  garante que o hash do script é aceito pelo `verificarSenha` do servidor. Segredo novo só vale depois de `npm run implantar`. Se o login
   travar por tentativas, `delete from tentativas_login` no D1 remoto destrava na hora.
 - **Classes de `@layer components` perdem para utilitários e não aceitam variante.** `ceu`, `topo-seguro`,
   `lados-amplos` etc. vivem em `src/index.css` na camada de componentes: um `pt-5` no mesmo elemento

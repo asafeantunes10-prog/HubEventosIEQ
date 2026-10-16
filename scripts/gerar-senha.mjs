@@ -20,6 +20,7 @@
  * Cloudflare — nunca neste terminal em texto puro para sempre, nunca no git.
  */
 import { webcrypto as crypto } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
 
 const ITERACOES = 5000
 const PROJETO_PAGES = 'eventos-ieq'
@@ -32,7 +33,7 @@ function bytesParaBase64Url(bytes) {
     .replace(/=+$/, '')
 }
 
-async function hashDaSenha(senha) {
+export async function hashDaSenha(senha) {
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const chave = await crypto.subtle.importKey(
     'raw',
@@ -61,7 +62,7 @@ function senhaAleatoria() {
   return Array.from(bytes, (b) => alfabeto[b % alfabeto.length]).join('')
 }
 
-function chaveDeSessao() {
+export function chaveDeSessao() {
   return bytesParaBase64Url(crypto.getRandomValues(new Uint8Array(32)))
 }
 
@@ -89,4 +90,7 @@ async function principal() {
   console.log('Depois de rodar os dois, publique o site de novo (npm run implantar) para o login valer.\n')
 }
 
-principal()
+// So roda quando chamado direto (`npm run gerar-senha`), nao quando outro script importa o hash.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  principal()
+}
